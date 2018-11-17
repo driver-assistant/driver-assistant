@@ -1,1 +1,3 @@
+rootProject.name = 'Driver Assistant'
+
 include ':app'
