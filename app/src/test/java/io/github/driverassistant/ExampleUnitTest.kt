@@ -1,4 +1,4 @@
-package io.github.driver_assistant
+package io.github.driverassistant
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

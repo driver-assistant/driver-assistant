@@ -1,4 +1,4 @@
-package io.github.driver_assistant
+package io.github.driverassistant
 
 import android.support.test.InstrumentationRegistry
 import android.support.test.runner.AndroidJUnit4
