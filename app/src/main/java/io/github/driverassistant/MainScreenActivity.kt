@@ -42,6 +42,8 @@ class MainScreenActivity : AppCompatActivity() {
 
     val statsText: TextView by lazy { statsTextView }
 
+    val recognizedObjects: RecognizedObjectsView by lazy { recognizedObjectsView }
+
     private var mRecognizersRunnerThreadChain: RecognizersRunnerThreadChain? = null
 
     private var mCaptureState = State.PREVIEW

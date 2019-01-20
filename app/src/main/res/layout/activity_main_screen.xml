@@ -10,6 +10,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <io.github.driverassistant.RecognizedObjectsView
+        android:id="@+id/recognizedObjectsView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
     <Chronometer
         android:id="@+id/chronometer"
         android:layout_width="wrap_content"
