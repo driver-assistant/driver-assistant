@@ -10,4 +10,48 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <Chronometer
+        android:id="@+id/chronometer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="@dimen/side_margin"
+        android:layout_marginTop="@dimen/side_margin"
+        android:textColor="@color/colorAccent"
+        android:visibility="invisible" />
+
+    <TextView
+        android:id="@+id/statsTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="@dimen/side_margin"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:textColor="@color/colorAccent"
+        tools:ignore="RelativeOverlap" />
+
+    <ImageButton
+        android:id="@+id/recognizerImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="@dimen/side_margin"
+        android:layout_marginBottom="@dimen/side_margin"
+        android:contentDescription="@string/video_button"
+        android:src="@mipmap/btn_recognizer" />
+
+    <ImageButton
+        android:id="@+id/videoImageButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="@dimen/side_margin"
+        android:layout_marginBottom="@dimen/side_margin"
+        android:contentDescription="@string/video_button"
+        android:src="@mipmap/btn_video_online" />
+
 </RelativeLayout>
