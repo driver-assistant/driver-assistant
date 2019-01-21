@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.View
+import io.github.driverassistant.recognizer.PaintableOnCanvas
 
 class RecognizedObjectsView @JvmOverloads constructor(
     context: Context,
@@ -12,9 +13,9 @@ class RecognizedObjectsView @JvmOverloads constructor(
     defStyleRes: Int = 0
 ) : View(context, attrs, defStyleAttr, defStyleRes) {
 
-    var recognizedObjects: Iterable<RecognizedObject> = listOf()
+    var paintableObjects: Iterable<PaintableOnCanvas> = emptyList()
 
     override fun onDraw(canvas: Canvas) {
-        recognizedObjects.forEach { it.paintOn(canvas) }
+        paintableObjects.forEach { it.paintOn(canvas) }
     }
 }

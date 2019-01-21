@@ -30,6 +30,7 @@ import android.view.View.VISIBLE
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
+import io.github.driverassistant.recognizer.*
 import kotlinx.android.synthetic.main.activity_main_screen.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -38,11 +39,13 @@ import kotlin.math.sign
 
 class MainScreenActivity : AppCompatActivity() {
 
-    var latestImage: LatestImageResult? = null
+    var latestImage: LatestImage? = null
 
     val statsText: TextView by lazy { statsTextView }
 
     val recognizedObjects: RecognizedObjectsView by lazy { recognizedObjectsView }
+
+    private val mRecognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
 
     private var mRecognizersRunnerThreadChain: RecognizersRunnerThreadChain? = null
 
@@ -106,7 +109,7 @@ class MainScreenActivity : AppCompatActivity() {
 
             val latestImageSize = width to height
 
-            latestImage = LatestImageResult(latestImageBytes, latestImageSize)
+            latestImage = LatestImage(latestImageBytes, latestImageSize)
 
             println("Image is shoot: $latestImageSize")
 
@@ -182,7 +185,8 @@ class MainScreenActivity : AppCompatActivity() {
             val chain = mRecognizersRunnerThreadChain
 
             if (chain == null) {
-                mRecognizersRunnerThreadChain = startRecognizersRunnerThreadChain(this, 5.0)
+                mRecognizersRunnerThreadChain =
+                        startRecognizersRunnerThreadChain(this, 5.0, mRecognizers)
             } else {
                 chain.stop()
                 mRecognizersRunnerThreadChain = null
@@ -450,7 +454,7 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-    fun lockFocus() {
+    fun lockFocusToTakeShot() {
         mCaptureState = State.WAIT_LOCK
         mCaptureRequestBuilder!![CONTROL_AF_TRIGGER] = CONTROL_AF_TRIGGER_START
 
@@ -527,10 +531,5 @@ class MainScreenActivity : AppCompatActivity() {
             PREVIEW,
             WAIT_LOCK;
         }
-
-        data class LatestImageResult(
-            val latestImageBytes: ByteArray,
-            val latestImageSize: Pair<Int, Int>
-        )
     }
 }
