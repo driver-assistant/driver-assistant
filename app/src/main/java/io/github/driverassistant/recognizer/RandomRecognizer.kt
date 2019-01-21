@@ -53,10 +53,7 @@ data class RedArrow(
 ) : PaintableOnCanvas {
 
     override fun paintOn(canvas: Canvas) {
-        // Draw line:
         canvas.drawLine(x0.f, y0.f, x1.f, y1.f, redPaint)
-
-        // Draw arrow:
         canvas.drawCircle(x1.f, y1.f, arrowRadius, redPaint)
     }
 
