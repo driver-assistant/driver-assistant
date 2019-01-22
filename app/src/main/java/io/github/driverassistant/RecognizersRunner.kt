@@ -1,8 +1,9 @@
-package io.github.driverassistant.recognizer
+package io.github.driverassistant
 
 import android.os.Handler
 import android.os.HandlerThread
-import io.github.driverassistant.MainScreenActivity
+import io.github.driverassistant.recognizer.LatestImage
+import io.github.driverassistant.recognizer.Recognizer
 import kotlin.math.roundToLong
 
 class RecognizersRunner(
@@ -11,16 +12,27 @@ class RecognizersRunner(
     private val handler: Handler,
     private val recognizers: List<Recognizer>
 ) : Runnable {
+
     override fun run() {
+        iterate()
+
+        handler.postDelayed(this, (1000 / fps).roundToLong())
+    }
+
+    private fun iterate() {
         mainScreenActivity.lockFocusToTakeShot()
         val latestImage = waitForImage()
 
         val statsText = with(latestImage) { "${bytes.size} bytes, $wight x $height" }
         mainScreenActivity.statsText.post { mainScreenActivity.statsText.text = statsText }
 
-        process(latestImage)
+        val paintables = recognizers
+            .flatMap { recognizer -> recognizer.recognize(latestImage) }
+            .flatMap { recognizedObject -> recognizedObject.elements }
+            .map { recognizedObjectElement -> recognizedObjectElement.toPaintableOnCanvas() }
 
-        handler.postDelayed(this, (1000 / fps).roundToLong())
+        mainScreenActivity.recognizedObjects.paintables = paintables
+        mainScreenActivity.recognizedObjects.invalidate()
     }
 
     private fun waitForImage(): LatestImage {
@@ -33,17 +45,6 @@ class RecognizersRunner(
                 return latestImage
             }
         }
-    }
-
-    private fun process(image: LatestImage) {
-        val objects = recognizers.flatMap { it.recognize(image) }
-
-        updateObjects(objects)
-    }
-
-    private fun updateObjects(objects: Iterable<PaintableOnCanvas>) {
-        mainScreenActivity.recognizedObjects.paintableObjects = objects
-        mainScreenActivity.recognizedObjects.invalidate()
     }
 }
 
@@ -62,8 +63,7 @@ fun startRecognizersRunnerThreadChain(
         this.start()
         val looper = Handler(this.looper)
 
-        val recognizersRunner =
-            RecognizersRunner(mainScreenActivity, fps, looper, recognizers)
+        val recognizersRunner = RecognizersRunner(mainScreenActivity, fps, looper, recognizers)
         looper.post(recognizersRunner)
 
         return RecognizersRunnerThreadChain(recognizersRunner, this, looper)
