@@ -2,4 +2,8 @@
     <string name="app_name">Driver Assistant</string>
     <string name="image_button">Recognizer Switcher Button</string>
     <string name="video_button">Video Record Switcher Button</string>
+    <string name="no_camera_permission">Can\'t run without "camera" permission</string>
+    <string name="no_write_external_storage_permission">Can\'t record without "write external storage" permission</string>
+    <string name="unable_to_start_preview">Preview configuration failed</string>
+    <string name="unable_to_start_recording">Recording configuration failed</string>
 </resources>

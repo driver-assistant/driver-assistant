@@ -255,13 +255,13 @@ class MainScreenActivity : AppCompatActivity() {
         when (RequestCode.values()[requestCode]) {
             RequestCode.CAMERA -> {
                 if (grantResults[0] != PERMISSION_GRANTED) {
-                    shortToast("Can't run without camera permission")
+                    shortToast(R.string.no_camera_permission)
                 }
             }
 
             RequestCode.WRITE_EXTERNAL_STORAGE -> {
                 if (grantResults[0] != PERMISSION_GRANTED) {
-                    shortToast("Can't run without an ability of saving video")
+                    shortToast(R.string.no_write_external_storage_permission)
                 } else {
                     startRecording()
                 }
@@ -307,7 +307,7 @@ class MainScreenActivity : AppCompatActivity() {
                     cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadHandler)
                 } else {
                     if (shouldShowRequestPermissionRationale(CAMERA)) {
-                        shortToast("Video app requires access to camera")
+                        shortToast(R.string.no_camera_permission)
                     }
 
                     requestPermissions(arrayOf(CAMERA), RequestCode.CAMERA.ordinal)
@@ -337,7 +337,7 @@ class MainScreenActivity : AppCompatActivity() {
             }
 
             override fun onConfigureFailed(session: CameraCaptureSession) {
-                shortToast("Unable to setup camera preview")
+                shortToast(R.string.unable_to_start_preview)
             }
         }
 
@@ -423,7 +423,7 @@ class MainScreenActivity : AppCompatActivity() {
                 }
 
                 override fun onConfigureFailed(session: CameraCaptureSession) {
-                    shortToast("Unable to setup camera record")
+                    shortToast(R.string.unable_to_start_recording)
                 }
             },
             null
@@ -442,7 +442,7 @@ class MainScreenActivity : AppCompatActivity() {
                 startRecording()
             } else {
                 if (shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
-                    shortToast("App needs the permission to save video")
+                    shortToast(R.string.no_write_external_storage_permission)
                 }
                 requestPermissions(
                     arrayOf(WRITE_EXTERNAL_STORAGE),
@@ -485,8 +485,8 @@ class MainScreenActivity : AppCompatActivity() {
         prepare()
     }
 
-    private fun shortToast(message: String) {
-        Toast.makeText(applicationContext, message, LENGTH_SHORT).show()
+    private fun shortToast(resId: Int) {
+        Toast.makeText(applicationContext, resId, LENGTH_SHORT).show()
     }
 
     companion object {
