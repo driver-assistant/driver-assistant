@@ -10,13 +10,11 @@ class RandomRecognizer : Recognizer {
     override fun recognize(image: LatestImage): List<PaintableOnCanvas> {
         val objects = mutableListOf<PaintableOnCanvas>()
 
-        val (w, h) = image.size
-
         for (i in 1..objectCount) {
             val orientationId = Random.nextInt(diff.indices)
 
-            val x0 = Random.nextInt(delta..(w - delta))
-            val y0 = Random.nextInt(delta..(h - delta))
+            val x0 = Random.nextInt(delta..(image.wight - delta))
+            val y0 = Random.nextInt(delta..(image.height - delta))
 
             val x1 = x0 + diff[orientationId][0]
             val y1 = y0 + diff[orientationId][1]
