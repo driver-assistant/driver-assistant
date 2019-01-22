@@ -11,7 +11,7 @@ class RandomRecognizer : Recognizer {
         for (i in 1..OBJECT_COUNT) {
             val angle = Random.nextFloat() * 2 * Math.PI
 
-            val x0 = Random.nextInt(LENGTH..(image.wight - LENGTH)).toFloat()
+            val x0 = Random.nextInt(LENGTH..(image.width - LENGTH)).toFloat()
             val y0 = Random.nextInt(LENGTH..(image.height - LENGTH)).toFloat()
 
             val x1 = x0 + LENGTH * Math.cos(angle).toFloat()
