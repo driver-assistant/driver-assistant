@@ -90,15 +90,15 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-    private var cameraId: String? = null
+    private lateinit var cameraId: String
 
-    private var previewSize: Size? = null
+    private lateinit var previewSize: Size
 
-    private var videoSize: Size? = null
+    private lateinit var videoSize: Size
 
-    private var imageSize: Size? = null
+    private lateinit var imageSize: Size
 
-    private var imageReader: ImageReader? = null
+    private lateinit var imageReader: ImageReader
 
     private val onImageAvailableListener = ImageReader.OnImageAvailableListener { imageReader ->
         imageReader.acquireLatestImage().apply {
@@ -117,25 +117,25 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-    private var totalRotation: Int? = null
+    private var totalRotation = 0
 
     private var captureThread: HandlerThread? = null
 
     private var captureThreadHandler: Handler? = null
 
-    private var captureRequestBuilder: CaptureRequest.Builder? = null
+    private lateinit var captureRequestBuilder: CaptureRequest.Builder
 
     private var isRecording = false
 
-    private var videoFolder: File? = null
+    private lateinit var videoFolder: File
 
-    private var videoFilePath: String? = null
+    private lateinit var videoFilePath: String
 
     private val mediaRecorder = MediaRecorder()
 
-    private var previewCaptureSession: CameraCaptureSession? = null
+    private lateinit var previewCaptureSession: CameraCaptureSession
 
-    private val previewCaptureCallback: CaptureCallback = object : CaptureCallback() {
+    private val previewCaptureCallback = object : CaptureCallback() {
         override fun onCaptureCompleted(
             session: CameraCaptureSession,
             request: CaptureRequest,
@@ -154,9 +154,9 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-    private var recordCaptureSession: CameraCaptureSession? = null
+    private lateinit var recordCaptureSession: CameraCaptureSession
 
-    private val recordCaptureCallback: CaptureCallback = object : CaptureCallback() {
+    private val recordCaptureCallback = object : CaptureCallback() {
         override fun onCaptureCompleted(
             session: CameraCaptureSession,
             request: CaptureRequest,
@@ -278,26 +278,26 @@ class MainScreenActivity : AppCompatActivity() {
         val deviceRotation = windowManager.defaultDisplay.rotation  // TODO: research video rotation (#3)
         totalRotation = sensorToDeviceRotation(cameraCharacteristics, deviceRotation)
 
-        val swapMetrics = totalRotation!! == 90 || totalRotation!! == 270
+        val swapMetrics = totalRotation == 90 || totalRotation == 270
 
         val (rotatedWidth, rotatedHeight) = when (swapMetrics) {
             false -> width to height
             true -> height to width
         }
 
-        previewSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]
+        previewSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]!!
             .getOutputSizes(SurfaceTexture::class.java)
             .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
-        videoSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]
+        videoSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]!!
             .getOutputSizes(MediaRecorder::class.java)
             .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
-        imageSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]
+        imageSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]!!
             .getOutputSizes(ImageFormat.JPEG)
             .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
-        imageReader = ImageReader.newInstance(imageSize!!.width, imageSize!!.height, ImageFormat.JPEG, 1).apply {
+        imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, ImageFormat.JPEG, 1).apply {
             setOnImageAvailableListener(onImageAvailableListener, captureThreadHandler)
         }
 
@@ -322,7 +322,7 @@ class MainScreenActivity : AppCompatActivity() {
 
     private fun startPreview() {
         val surfaceTexture = cameraTextureView.surfaceTexture
-        surfaceTexture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+        surfaceTexture.setDefaultBufferSize(previewSize.width, previewSize.height)
         val previewSurface = Surface(surfaceTexture)
 
         captureRequestBuilder = cameraDevice!!.createCaptureRequest(TEMPLATE_PREVIEW).apply {
@@ -332,7 +332,7 @@ class MainScreenActivity : AppCompatActivity() {
         val stateCallback = object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
                 previewCaptureSession = session.apply {
-                    setRepeatingRequest(captureRequestBuilder!!.build(), null, captureThreadHandler)
+                    setRepeatingRequest(captureRequestBuilder.build(), null, captureThreadHandler)
                 }
             }
 
@@ -341,7 +341,7 @@ class MainScreenActivity : AppCompatActivity() {
             }
         }
 
-        cameraDevice!!.createCaptureSession(listOf(previewSurface, imageReader!!.surface), stateCallback, null)
+        cameraDevice!!.createCaptureSession(listOf(previewSurface, imageReader.surface), stateCallback, null)
     }
 
     private fun requestToStartStillCapture() {
@@ -351,15 +351,15 @@ class MainScreenActivity : AppCompatActivity() {
             cameraDevice!!.createCaptureRequest(TEMPLATE_STILL_CAPTURE)
         }
 
-        captureRequestBuilder!!.apply {
-            addTarget(imageReader!!.surface)
+        captureRequestBuilder.apply {
+            addTarget(imageReader.surface)
             this[JPEG_ORIENTATION] = totalRotation
         }
 
         if (isRecording) {
-            recordCaptureSession!!.capture(captureRequestBuilder!!.build(), null, null)
+            recordCaptureSession.capture(captureRequestBuilder.build(), null, null)
         } else {
-            previewCaptureSession!!.capture(captureRequestBuilder!!.build(), null, null)
+            previewCaptureSession.capture(captureRequestBuilder.build(), null, null)
         }
     }
 
@@ -383,15 +383,15 @@ class MainScreenActivity : AppCompatActivity() {
         val movieDir = Environment.getExternalStoragePublicDirectory(DIRECTORY_MOVIES)
         videoFolder = File(movieDir, "driver-assistant/")
 
-        if (!videoFolder!!.exists()) {
-            videoFolder!!.mkdirs()
+        if (!videoFolder.exists()) {
+            videoFolder.mkdirs()
         }
     }
 
     private fun createVideoFile() {
         val timestamp = SimpleDateFormat("yyyy.MM.dd-HH.mm.ss", Locale.US).format(Date())
         val prefix = "session-$timestamp-"
-        val videoFile = File.createTempFile(prefix, ".mp4", videoFolder!!)
+        val videoFile = File.createTempFile(prefix, ".mp4", videoFolder)
         videoFilePath = videoFile.absolutePath
     }
 
@@ -404,7 +404,7 @@ class MainScreenActivity : AppCompatActivity() {
         mediaRecorder.init()
 
         val surfaceTexture = cameraTextureView.surfaceTexture
-        surfaceTexture.setDefaultBufferSize(previewSize!!.width, previewSize!!.height)
+        surfaceTexture.setDefaultBufferSize(previewSize.width, previewSize.height)
         val previewSurface = Surface(surfaceTexture)
         val recordSurface = mediaRecorder.surface
 
@@ -414,11 +414,11 @@ class MainScreenActivity : AppCompatActivity() {
         }
 
         cameraDevice!!.createCaptureSession(
-            listOf(previewSurface, recordSurface, imageReader!!.surface),
+            listOf(previewSurface, recordSurface, imageReader.surface),
             object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession) {
                     recordCaptureSession = session.apply {
-                        setRepeatingRequest(captureRequestBuilder!!.build(), null, null)
+                        setRepeatingRequest(captureRequestBuilder.build(), null, null)
                     }
                 }
 
@@ -456,17 +456,17 @@ class MainScreenActivity : AppCompatActivity() {
 
     fun lockFocusToTakeShot() {
         captureState = State.WAIT_LOCK
-        captureRequestBuilder!![CONTROL_AF_TRIGGER] = CONTROL_AF_TRIGGER_START
+        captureRequestBuilder[CONTROL_AF_TRIGGER] = CONTROL_AF_TRIGGER_START
 
         if (isRecording) {
-            recordCaptureSession!!.capture(
-                captureRequestBuilder!!.build(),
+            recordCaptureSession.capture(
+                captureRequestBuilder.build(),
                 recordCaptureCallback,
                 captureThreadHandler
             )
         } else {
-            previewCaptureSession!!.capture(
-                captureRequestBuilder!!.build(),
+            previewCaptureSession.capture(
+                captureRequestBuilder.build(),
                 previewCaptureCallback,
                 captureThreadHandler
             )
@@ -479,9 +479,9 @@ class MainScreenActivity : AppCompatActivity() {
         setOutputFile(videoFilePath)
         setVideoEncodingBitRate(5_000_000)
         setVideoFrameRate(30)
-        setVideoSize(videoSize!!.width, videoSize!!.height)
+        setVideoSize(videoSize.width, videoSize.height)
         setVideoEncoder(H264)
-        setOrientationHint(totalRotation!!)
+        setOrientationHint(totalRotation)
         prepare()
     }
 
@@ -504,7 +504,7 @@ class MainScreenActivity : AppCompatActivity() {
         }
 
         private fun sensorToDeviceRotation(cameraCharacteristics: CameraCharacteristics, deviceRotation: Int): Int {
-            val sensorOrientation = cameraCharacteristics[SENSOR_ORIENTATION]
+            val sensorOrientation = cameraCharacteristics[SENSOR_ORIENTATION]!!
             val deviceOrientation = deviceRotation.toOrientation()
 
             return (sensorOrientation + deviceOrientation + 360) % 360
@@ -512,7 +512,7 @@ class MainScreenActivity : AppCompatActivity() {
 
         private fun CameraManager.findBackCameraId() = this
             .cameraIdList
-            .firstOrNull { this.cameraFacing(it) == LENS_FACING_BACK }
+            .first { this.cameraFacing(it) == LENS_FACING_BACK }
 
         private fun CameraManager.cameraFacing(cameraId: String) = this
             .getCameraCharacteristics(cameraId)[LENS_FACING]
