@@ -30,7 +30,7 @@ fun Line.toPaintableOnCanvas(): PaintableOnCanvas {
 
     return object : PaintableOnCanvas {
         override fun paintOn(canvas: Canvas) {
-            // TODO: research orientation (#4)
+            // TODO: research video rotation (#3). Now need to swap coordinates
             canvas.drawLine(line.y0, line.x0, line.y1, line.x1, paint)
         }
     }
@@ -65,7 +65,7 @@ fun Circle.toPaintableOnCanvas(): PaintableOnCanvas {
 
     return object : PaintableOnCanvas {
         override fun paintOn(canvas: Canvas) {
-            // TODO: research orientation (#4)
+            // TODO: research video rotation (#3). Now need to swap coordinates
             canvas.drawCircle(y, x, r, paint)
         }
     }
