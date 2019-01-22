@@ -4,22 +4,17 @@ import android.os.Handler
 import android.os.HandlerThread
 import io.github.driverassistant.recognizer.LatestImage
 import io.github.driverassistant.recognizer.Recognizer
+import io.github.driverassistant.util.LoopWithDelay
 import kotlin.math.roundToLong
 
 class RecognizersRunner(
     private val mainScreenActivity: MainScreenActivity,
-    private val fps: Double,
-    private val handler: Handler,
-    private val recognizers: List<Recognizer>
-) : Runnable {
+    private val recognizers: List<Recognizer>,
+    fps: Double,
+    handler: Handler
+) : LoopWithDelay(handler, (1000 / fps).roundToLong()) {
 
-    override fun run() {
-        iterate()
-
-        handler.postDelayed(this, (1000 / fps).roundToLong())
-    }
-
-    private fun iterate() {
+    override fun iterate() {
         mainScreenActivity.lockFocusToTakeShot()
         val latestImage = waitForImage()
 
@@ -63,7 +58,7 @@ fun startRecognizersRunnerThreadChain(
         this.start()
         val looper = Handler(this.looper)
 
-        val recognizersRunner = RecognizersRunner(mainScreenActivity, fps, looper, recognizers)
+        val recognizersRunner = RecognizersRunner(mainScreenActivity, recognizers, fps, looper)
         looper.post(recognizersRunner)
 
         return RecognizersRunnerThreadChain(recognizersRunner, this, looper)
