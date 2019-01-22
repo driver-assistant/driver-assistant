@@ -27,29 +27,29 @@ import android.view.TextureView.SurfaceTextureListener
 import android.view.View
 import android.view.View.INVISIBLE
 import android.view.View.VISIBLE
-import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
 import io.github.driverassistant.recognizer.LatestImage
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
+import io.github.driverassistant.util.LoopWithDelay
+import io.github.driverassistant.util.ThreadAndHandler
 import kotlinx.android.synthetic.main.activity_main_screen.*
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.math.roundToLong
 import kotlin.math.sign
 
 class MainScreenActivity : AppCompatActivity() {
 
     var latestImage: LatestImage? = null
 
-    val statsText: TextView by lazy { statsTextView }
-
-    val recognizedObjects: RecognizedObjectsView by lazy { recognizedObjectsView }
+    private lateinit var recognizersRunner: LoopWithDelay
 
     private val recognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
 
-    private var recognizersRunnerThreadChain: RecognizersRunnerThreadChain? = null
+    private var recognizerThreadAndHandler: ThreadAndHandler? = null
 
     private var captureState = State.PREVIEW
 
@@ -119,9 +119,7 @@ class MainScreenActivity : AppCompatActivity() {
 
     private var totalRotation = 0
 
-    private var captureThread: HandlerThread? = null
-
-    private var captureThreadHandler: Handler? = null
+    private var captureThreadAndHandler: ThreadAndHandler? = null
 
     private lateinit var captureRequestBuilder: CaptureRequest.Builder
 
@@ -182,16 +180,12 @@ class MainScreenActivity : AppCompatActivity() {
         createVideoFolder()
 
         recognizerImageButton.setOnClickListener {
-            val chain = recognizersRunnerThreadChain
+            val recognizer = recognizerThreadAndHandler
 
-            if (chain == null) {
-                recognizersRunnerThreadChain =
-                        startRecognizersRunnerThreadChain(this, 5.0, recognizers)
+            if (recognizer == null) {
+                startRecognizerThread(FPS)
             } else {
-                chain.stop()
-                recognizersRunnerThreadChain = null
-
-                statsTextView.text = ""
+                stopRecognizerThread()
             }
         }
 
@@ -301,13 +295,13 @@ class MainScreenActivity : AppCompatActivity() {
             .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
         imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, ImageFormat.JPEG, 1).apply {
-            setOnImageAvailableListener(onImageAvailableListener, captureThreadHandler)
+            setOnImageAvailableListener(onImageAvailableListener, captureThreadAndHandler!!.handler)
         }
 
         fun connectCamera() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (checkSelfPermission(this, CAMERA) == PERMISSION_GRANTED) {
-                    cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadHandler)
+                    cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadAndHandler!!.handler)
                 } else {
                     if (shouldShowRequestPermissionRationale(CAMERA)) {
                         shortToast(R.string.no_camera_permission)
@@ -316,7 +310,7 @@ class MainScreenActivity : AppCompatActivity() {
                     requestPermissions(arrayOf(CAMERA), RequestCode.CAMERA.ordinal)
                 }
             } else {
-                cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadHandler)
+                cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadAndHandler!!.handler)
             }
         }
 
@@ -335,7 +329,7 @@ class MainScreenActivity : AppCompatActivity() {
         val stateCallback = object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
                 previewCaptureSession = session.apply {
-                    setRepeatingRequest(captureRequestBuilder.build(), null, captureThreadHandler)
+                    setRepeatingRequest(captureRequestBuilder.build(), null, captureThreadAndHandler!!.handler)
                 }
             }
 
@@ -367,19 +361,77 @@ class MainScreenActivity : AppCompatActivity() {
     }
 
     private fun startBackgroundThread() {
-        with(HandlerThread("Driver Assistant Capture Thread")) {
-            this.start()
-            captureThread = this
-            captureThreadHandler = Handler(this.looper)
-        }
+        val thread = HandlerThread("Driver Assistant Capture Thread")
+        thread.start()
+        val handler = Handler(thread.looper)
+
+        captureThreadAndHandler = ThreadAndHandler(thread, handler)
     }
 
     private fun stopBackgroundThread() {
-        captureThread!!.quitSafely()
-        captureThread!!.join()
+        captureThreadAndHandler!!.thread.apply {
+            quitSafely()
+            join()
+        }
 
-        captureThread = null
-        captureThreadHandler = null
+        captureThreadAndHandler = null
+    }
+
+    private fun startRecognizerThread(fps: Double) {
+        val thread = HandlerThread("Driver Assistant Recognizer Thread")
+        thread.start()
+        val handler = Handler(thread.looper)
+
+        recognizersRunner = object : LoopWithDelay(handler, (1000 / fps).roundToLong()) {
+            override fun iterate() {
+                lockFocusToTakeShot()
+                val latestImage = waitForImage()
+
+                val statsText = with(latestImage) { "${bytes.size} bytes, $wight x $height" }
+                statsTextView.post { statsTextView.text = statsText }
+
+                val paintables = recognizers
+                    .flatMap { recognizer -> recognizer.recognize(latestImage) }
+                    .flatMap { recognizedObject -> recognizedObject.elements }
+                    .map { recognizedObjectElement -> recognizedObjectElement.toPaintableOnCanvas() }
+
+                recognizedObjectsView.paintables = paintables
+                recognizedObjectsView.invalidate()
+            }
+
+            private fun waitForImage(): LatestImage {
+                val activity = this@MainScreenActivity
+
+                while (true) {
+                    val latestImage = activity.latestImage
+
+                    if (latestImage != null) {
+                        activity.latestImage = null
+
+                        return latestImage
+                    }
+                }
+            }
+        }
+
+        handler.post(recognizersRunner)
+
+        recognizerThreadAndHandler = ThreadAndHandler(thread, handler)
+    }
+
+    private fun stopRecognizerThread() {
+        recognizerThreadAndHandler!!.apply {
+            handler.removeCallbacks(recognizersRunner)
+
+            thread.quitSafely()
+            thread.join()
+        }
+
+        recognizedObjectsView.paintables = emptyList()
+        recognizedObjectsView.invalidate()
+        statsTextView.text = ""
+
+        recognizerThreadAndHandler = null
     }
 
     private fun createVideoFolder() {
@@ -465,13 +517,13 @@ class MainScreenActivity : AppCompatActivity() {
             recordCaptureSession.capture(
                 captureRequestBuilder.build(),
                 recordCaptureCallback,
-                captureThreadHandler
+                captureThreadAndHandler!!.handler
             )
         } else {
             previewCaptureSession.capture(
                 captureRequestBuilder.build(),
                 previewCaptureCallback,
-                captureThreadHandler
+                captureThreadAndHandler!!.handler
             )
         }
     }
@@ -493,6 +545,7 @@ class MainScreenActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val FPS = 5.0
 
         private val Size.area get() = this.width.toLong() * this.height.toLong()
 
