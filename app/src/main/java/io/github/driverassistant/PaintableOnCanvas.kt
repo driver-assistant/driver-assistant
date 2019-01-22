@@ -30,7 +30,8 @@ fun Line.toPaintableOnCanvas(): PaintableOnCanvas {
 
     return object : PaintableOnCanvas {
         override fun paintOn(canvas: Canvas) {
-            canvas.drawLine(line.x0, line.y0, line.x1, line.y1, paint)
+            // TODO: research orientation (#4)
+            canvas.drawLine(line.y0, line.x0, line.y1, line.x1, paint)
         }
     }
 }
@@ -64,7 +65,8 @@ fun Circle.toPaintableOnCanvas(): PaintableOnCanvas {
 
     return object : PaintableOnCanvas {
         override fun paintOn(canvas: Canvas) {
-            canvas.drawCircle(x, y, r, paint)
+            // TODO: research orientation (#4)
+            canvas.drawCircle(y, x, r, paint)
         }
     }
 }
