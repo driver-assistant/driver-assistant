@@ -18,7 +18,6 @@ import android.media.MediaRecorder.OutputFormat.MPEG_4
 import android.media.MediaRecorder.VideoEncoder.H264
 import android.media.MediaRecorder.VideoSource.SURFACE
 import android.os.*
-import android.os.Environment.DIRECTORY_MOVIES
 import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AppCompatActivity
 import android.util.Size
@@ -34,9 +33,10 @@ import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.util.LoopWithDelay
 import io.github.driverassistant.util.ThreadAndHandler
+import io.github.driverassistant.util.createVideoFile
+import io.github.driverassistant.util.ensureVideoFolder
 import kotlinx.android.synthetic.main.activity_main_screen.*
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.roundToLong
 import kotlin.math.sign
@@ -74,7 +74,7 @@ class MainScreenActivity : AppCompatActivity() {
             cameraDevice = camera
 
             if (isRecording) {
-                createVideoFile()
+                videoFilePath = createVideoFile(videoFolder).absolutePath
                 startRecording()
             } else {
                 startPreview()
@@ -177,7 +177,7 @@ class MainScreenActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_screen)
 
-        createVideoFolder()
+        videoFolder = ensureVideoFolder(FOLDER_NAME)
 
         recognizerImageButton.setOnClickListener {
             val recognizer = recognizerThreadAndHandler
@@ -210,7 +210,7 @@ class MainScreenActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
-        startBackgroundThread()
+        startCaptureThread()
 
         if (cameraTextureView.isAvailable) {
             setupCamera(cameraTextureView.width, cameraTextureView.height)
@@ -223,7 +223,7 @@ class MainScreenActivity : AppCompatActivity() {
         cameraDevice!!.close()
         cameraDevice = null
 
-        stopBackgroundThread()
+        stopCaptureThread()
 
         super.onPause()
     }
@@ -360,7 +360,7 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-    private fun startBackgroundThread() {
+    private fun startCaptureThread() {
         val thread = HandlerThread("Driver Assistant Capture Thread")
         thread.start()
         val handler = Handler(thread.looper)
@@ -368,7 +368,7 @@ class MainScreenActivity : AppCompatActivity() {
         captureThreadAndHandler = ThreadAndHandler(thread, handler)
     }
 
-    private fun stopBackgroundThread() {
+    private fun stopCaptureThread() {
         captureThreadAndHandler!!.thread.apply {
             quitSafely()
             join()
@@ -434,27 +434,11 @@ class MainScreenActivity : AppCompatActivity() {
         recognizerThreadAndHandler = null
     }
 
-    private fun createVideoFolder() {
-        val movieDir = Environment.getExternalStoragePublicDirectory(DIRECTORY_MOVIES)
-        videoFolder = File(movieDir, "driver-assistant/")
-
-        if (!videoFolder.exists()) {
-            videoFolder.mkdirs()
-        }
-    }
-
-    private fun createVideoFile() {
-        val timestamp = SimpleDateFormat("yyyy.MM.dd-HH.mm.ss", Locale.US).format(Date())
-        val prefix = "session-$timestamp-"
-        val videoFile = File.createTempFile(prefix, ".mp4", videoFolder)
-        videoFilePath = videoFile.absolutePath
-    }
-
     private fun startRecording() {
         isRecording = true
         videoImageButton.setImageResource(R.mipmap.btn_video_busy)
 
-        createVideoFile()
+        videoFilePath = createVideoFile(videoFolder).absolutePath
 
         mediaRecorder.init()
 
@@ -546,6 +530,8 @@ class MainScreenActivity : AppCompatActivity() {
 
     companion object {
         private const val FPS = 5.0
+
+        private const val FOLDER_NAME = "driver-assistant/"
 
         private val Size.area get() = this.width.toLong() * this.height.toLong()
 
