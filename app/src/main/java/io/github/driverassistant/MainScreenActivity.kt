@@ -387,7 +387,7 @@ class MainScreenActivity : AppCompatActivity() {
                 lockFocusToTakeShot()
                 val latestImage = waitForImage()
 
-                val statsText = with(latestImage) { "${bytes.size} bytes, $wight x $height" }
+                val statsText = with(latestImage) { "${bytes.size} bytes, $width x $height" }
                 statsTextView.post { statsTextView.text = statsText }
 
                 val paintables = recognizers
