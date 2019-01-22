@@ -30,7 +30,9 @@ import android.view.View.VISIBLE
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.Toast.LENGTH_SHORT
-import io.github.driverassistant.recognizer.*
+import io.github.driverassistant.recognizer.LatestImage
+import io.github.driverassistant.recognizer.RandomRecognizer
+import io.github.driverassistant.recognizer.Recognizer
 import kotlinx.android.synthetic.main.activity_main_screen.*
 import java.io.File
 import java.text.SimpleDateFormat
@@ -274,7 +276,10 @@ class MainScreenActivity : AppCompatActivity() {
         val cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId)
 
         val deviceRotation = windowManager.defaultDisplay.rotation  // TODO: research video rotation (#3)
-        totalRotation = sensorToDeviceRotation(cameraCharacteristics, deviceRotation)
+        totalRotation = sensorToDeviceRotation(
+            cameraCharacteristics,
+            deviceRotation
+        )
 
         val swapMetrics = totalRotation == 90 || totalRotation == 270
 

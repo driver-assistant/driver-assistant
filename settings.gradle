@@ -1,3 +1,4 @@
-rootProject.name = 'Driver Assistant'
+rootProject.name = "Driver Assistant"
 
-include ':app'
+include ":app"
+include ":recognizer"
