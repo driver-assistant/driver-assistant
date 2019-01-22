@@ -107,11 +107,9 @@ class MainScreenActivity : AppCompatActivity() {
             val latestImageBytes = ByteArray(buffer.remaining())
             buffer.get(latestImageBytes)
 
-            val latestImageSize = width to height
+            latestImage = LatestImage(latestImageBytes, width, height)
 
-            latestImage = LatestImage(latestImageBytes, latestImageSize)
-
-            println("Image is shoot: $latestImageSize")
+            println("Image is shoot: $width x $height")
 
             close()
         }

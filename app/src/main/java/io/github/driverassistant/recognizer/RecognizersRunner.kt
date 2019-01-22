@@ -15,7 +15,7 @@ class RecognizersRunner(
         mainScreenActivity.lockFocusToTakeShot()
         val latestImage = waitForImage()
 
-        val statsText = with(latestImage) { "${bytes.size} bytes, ${size.first} x ${size.second}" }
+        val statsText = with(latestImage) { "${bytes.size} bytes, $wight x $height" }
         mainScreenActivity.statsText.post { mainScreenActivity.statsText.text = statsText }
 
         process(latestImage)
