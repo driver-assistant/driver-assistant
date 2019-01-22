@@ -17,7 +17,7 @@ class RandomRecognizer : Recognizer {
             val x1 = x0 + LENGTH * Math.cos(angle).toFloat()
             val y1 = y0 + LENGTH * Math.sin(angle).toFloat()
 
-            objects.add(RedArrow(y0, x0, y1, x1))
+            objects.add(RedArrow(x0, y0, x1, y1))
         }
 
         return objects
