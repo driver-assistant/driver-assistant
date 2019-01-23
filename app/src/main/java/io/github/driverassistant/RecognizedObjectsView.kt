@@ -5,12 +5,19 @@ import android.graphics.Canvas
 import android.util.AttributeSet
 import android.view.View
 
-class RecognizedObjectsView @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0,
-    defStyleRes: Int = 0
-) : View(context, attrs, defStyleAttr, defStyleRes) {
+class RecognizedObjectsView : View {
+
+    constructor(context: Context) :
+            super(context)
+
+    constructor(context: Context, attrs: AttributeSet?) :
+            super(context, attrs)
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) :
+            super(context, attrs, defStyleAttr)
+
+    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) :
+            super(context, attrs, defStyleAttr, defStyleRes)
 
     var paintables: Iterable<PaintableOnCanvas> = emptyList()
 
