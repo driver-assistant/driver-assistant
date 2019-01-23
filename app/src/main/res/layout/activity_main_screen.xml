@@ -45,7 +45,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="@dimen/side_margin"
         android:layout_marginBottom="@dimen/side_margin"
-        android:contentDescription="@string/video_button"
+        android:contentDescription="@string/recognizer_button"
         android:src="@mipmap/btn_recognizer" />
 
     <ImageButton
