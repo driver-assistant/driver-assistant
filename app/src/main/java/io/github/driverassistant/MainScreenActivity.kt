@@ -64,7 +64,7 @@ class MainScreenActivity : AppCompatActivity() {
         override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
         }
 
-        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = false
+        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = true
     }
 
     private var cameraDevice: CameraDevice? = null
