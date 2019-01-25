@@ -32,7 +32,6 @@ import io.github.driverassistant.recognizer.LatestImage
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.util.LoopWithDelay
-import io.github.driverassistant.util.ThreadAndHandler
 import io.github.driverassistant.util.createVideoFile
 import io.github.driverassistant.util.ensureVideoFolder
 import kotlinx.android.synthetic.main.activity_main_screen.*
@@ -49,7 +48,7 @@ class MainScreenActivity : AppCompatActivity() {
 
     private val recognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
 
-    private var recognizerThreadAndHandler: ThreadAndHandler? = null
+    private var recognizerThread: HandlerThread? = null
 
     private var captureState = State.PREVIEW
 
@@ -119,7 +118,7 @@ class MainScreenActivity : AppCompatActivity() {
 
     private var totalRotation = 0
 
-    private var captureThreadAndHandler: ThreadAndHandler? = null
+    private var captureThread: HandlerThread? = null
 
     private lateinit var captureRequestBuilder: CaptureRequest.Builder
 
@@ -180,7 +179,7 @@ class MainScreenActivity : AppCompatActivity() {
         videoFolder = ensureVideoFolder(FOLDER_NAME)
 
         recognizerImageButton.setOnClickListener {
-            val recognizer = recognizerThreadAndHandler
+            val recognizer = recognizerThread
 
             if (recognizer == null) {
                 startRecognizerThread(FPS)
@@ -295,13 +294,13 @@ class MainScreenActivity : AppCompatActivity() {
             .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
         imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, ImageFormat.JPEG, 1).apply {
-            setOnImageAvailableListener(onImageAvailableListener, captureThreadAndHandler!!.handler)
+            setOnImageAvailableListener(onImageAvailableListener, captureThread!!.handler)
         }
 
         fun connectCamera() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 if (checkSelfPermission(this, CAMERA) == PERMISSION_GRANTED) {
-                    cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadAndHandler!!.handler)
+                    cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThread!!.handler)
                 } else {
                     if (shouldShowRequestPermissionRationale(CAMERA)) {
                         shortToast(R.string.no_camera_permission)
@@ -310,7 +309,7 @@ class MainScreenActivity : AppCompatActivity() {
                     requestPermissions(arrayOf(CAMERA), RequestCode.CAMERA.ordinal)
                 }
             } else {
-                cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThreadAndHandler!!.handler)
+                cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThread!!.handler)
             }
         }
 
@@ -329,7 +328,7 @@ class MainScreenActivity : AppCompatActivity() {
         val stateCallback = object : CameraCaptureSession.StateCallback() {
             override fun onConfigured(session: CameraCaptureSession) {
                 previewCaptureSession = session.apply {
-                    setRepeatingRequest(captureRequestBuilder.build(), null, captureThreadAndHandler!!.handler)
+                    setRepeatingRequest(captureRequestBuilder.build(), null, captureThread!!.handler)
                 }
             }
 
@@ -363,24 +362,23 @@ class MainScreenActivity : AppCompatActivity() {
     private fun startCaptureThread() {
         val thread = HandlerThread("Driver Assistant Capture Thread")
         thread.start()
-        val handler = Handler(thread.looper)
 
-        captureThreadAndHandler = ThreadAndHandler(thread, handler)
+        captureThread = thread
     }
 
     private fun stopCaptureThread() {
-        captureThreadAndHandler!!.thread.apply {
+        captureThread!!.apply {
             quitSafely()
             join()
         }
 
-        captureThreadAndHandler = null
+        captureThread = null
     }
 
     private fun startRecognizerThread(fps: Double) {
         val thread = HandlerThread("Driver Assistant Recognizer Thread")
         thread.start()
-        val handler = Handler(thread.looper)
+        val handler = thread.handler
 
         recognizersRunner = object : LoopWithDelay(handler, (1000 / fps).roundToLong()) {
             override fun iterate() {
@@ -416,22 +414,22 @@ class MainScreenActivity : AppCompatActivity() {
 
         handler.post(recognizersRunner)
 
-        recognizerThreadAndHandler = ThreadAndHandler(thread, handler)
+        recognizerThread = thread
     }
 
     private fun stopRecognizerThread() {
-        recognizerThreadAndHandler!!.apply {
+        recognizerThread!!.apply {
             handler.removeCallbacks(recognizersRunner)
 
-            thread.quitSafely()
-            thread.join()
+            quitSafely()
+            join()
         }
 
         recognizedObjectsView.paintables = emptyList()
         recognizedObjectsView.invalidate()
         statsTextView.text = ""
 
-        recognizerThreadAndHandler = null
+        recognizerThread = null
     }
 
     private fun startRecording() {
@@ -501,13 +499,13 @@ class MainScreenActivity : AppCompatActivity() {
             recordCaptureSession.capture(
                 captureRequestBuilder.build(),
                 recordCaptureCallback,
-                captureThreadAndHandler!!.handler
+                captureThread!!.handler
             )
         } else {
             previewCaptureSession.capture(
                 captureRequestBuilder.build(),
                 previewCaptureCallback,
-                captureThreadAndHandler!!.handler
+                captureThread!!.handler
             )
         }
     }
@@ -563,6 +561,8 @@ class MainScreenActivity : AppCompatActivity() {
             .filter { it.width >= width && it.height >= height }
             .minWith(sizeComparatorByArea)
             ?: this.first()
+
+        private val HandlerThread.handler get() = Handler(this.looper)
 
         enum class RequestCode {
             CAMERA,
