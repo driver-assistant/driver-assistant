@@ -6,4 +6,4 @@ android:
 script:
 - chmod +x ./gradlew
 - ./gradlew build
-#- ./gradlew build connectedCheck
+#- ./gradlew build connectedCheck  # TODO: Replace the previous line with this one when tests are required
