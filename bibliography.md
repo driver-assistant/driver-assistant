@@ -12,6 +12,10 @@
 - <https://stackoverflow.com/questions/3739661/error-inflating-when-extending-a-class>
 - <https://startandroid.ru/ru/uroki/vse-uroki-spiskom/311-urok-141-risovanie-dostup-k-canvas.html>
 
+## State machine
+- <https://robots.thoughtbot.com/finite-state-machines-android-kotlin-good-times>
+
 ## Huge resources
 - <http://developer.alexanderklimov.ru/android/>
 - <https://developer.android.com/guide/>
+- <https://kotlinlang.org/docs/reference/>
