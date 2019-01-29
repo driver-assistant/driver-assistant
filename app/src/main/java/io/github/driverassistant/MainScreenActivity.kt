@@ -1,9 +1,6 @@
 package io.github.driverassistant
 
-import android.Manifest.permission.CAMERA
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
 import android.hardware.camera2.CameraCaptureSession.CaptureCallback
@@ -13,32 +10,21 @@ import android.hardware.camera2.CaptureRequest.CONTROL_AF_TRIGGER
 import android.hardware.camera2.CaptureRequest.JPEG_ORIENTATION
 import android.hardware.camera2.CaptureResult.CONTROL_AF_STATE
 import android.media.ImageReader
-import android.media.MediaRecorder
-import android.media.MediaRecorder.OutputFormat.MPEG_4
-import android.media.MediaRecorder.VideoEncoder.H264
-import android.media.MediaRecorder.VideoSource.SURFACE
 import android.os.*
-import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AppCompatActivity
 import android.util.Size
-import android.view.Surface
 import android.view.TextureView.SurfaceTextureListener
 import android.view.View
 import android.view.View.INVISIBLE
-import android.view.View.VISIBLE
-import android.widget.Toast
-import android.widget.Toast.LENGTH_SHORT
 import io.github.driverassistant.recognizer.LatestImage
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
-import io.github.driverassistant.util.LoopWithDelay
-import io.github.driverassistant.util.createVideoFile
-import io.github.driverassistant.util.ensureVideoFolder
+import android.view.View.OnClickListener
+import io.github.driverassistant.state.*
+import io.github.driverassistant.util.*
 import kotlinx.android.synthetic.main.activity_main_screen.*
 import java.io.File
-import java.util.*
 import kotlin.math.roundToLong
-import kotlin.math.sign
 
 class MainScreenActivity : AppCompatActivity() {
 
@@ -54,14 +40,20 @@ class MainScreenActivity : AppCompatActivity() {
 
     private val surfaceTextureListener = object : SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
-            setupCamera(width, height)
+            stateMachine.make(
+                SurfaceTextureAvailableAction(
+                    width = width,
+                    height = height,
+                    onImageAvailableListener = onImageAvailableListener,
+                    activity = this@MainScreenActivity,  // TODO: is there a method to check permissions without passing the activity?
+                    cameraDeviceStateCallback = cameraDeviceStateCallback
+                )
+            )
         }
 
-        override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {
-        }
+        override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) = Unit
 
-        override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {
-        }
+        override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) = Unit
 
         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = true
     }
@@ -70,24 +62,15 @@ class MainScreenActivity : AppCompatActivity() {
 
     private val cameraDeviceStateCallback = object : CameraDevice.StateCallback() {
         override fun onOpened(camera: CameraDevice) {
-            cameraDevice = camera
-
-            if (isRecording) {
-                videoFilePath = createVideoFile(videoFolder).absolutePath
-                startRecording()
-            } else {
-                startPreview()
-            }
+            stateMachine.make(CameraOpenedAction(camera, cameraTextureView, previewCaptureSessionStateCallback))
         }
 
         override fun onDisconnected(camera: CameraDevice) {
-            camera.close()
-            cameraDevice = null
+            stateMachine.make(CameraClosedAction(camera))
         }
 
         override fun onError(camera: CameraDevice, error: Int) {
-            camera.close()
-            cameraDevice = null
+            stateMachine.make(CameraClosedAction(camera, error))
         }
     }
 
@@ -126,103 +109,95 @@ class MainScreenActivity : AppCompatActivity() {
 
     private lateinit var videoFolder: File
 
-    private lateinit var videoFilePath: String
-
-    private val mediaRecorder = MediaRecorder()
-
     private lateinit var previewCaptureSession: CameraCaptureSession
 
-    private val previewCaptureCallback = object : CaptureCallback() {
-        override fun onCaptureCompleted(
-            session: CameraCaptureSession,
-            request: CaptureRequest,
-            result: TotalCaptureResult
-        ) {
-            super.onCaptureCompleted(session, request, result)
+    private val recognizerImageButtonListener = OnClickListener {
+        stateMachine.make(RecognizerImageButtonClickedAction(FPS))
 
-            if (captureState == State.WAIT_LOCK) {
-                captureState = State.PREVIEW
+//        val recognizer = recognizerThread
+//
+//        if (recognizer == null) {
+//            startRecognizerThread(FPS)
+//        } else {
+//            stopRecognizerThread()
+//        }
+    }
 
-                val afState = result[CONTROL_AF_STATE]
-                if (afState == CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                    requestToStartStillCapture()
-                }
-            }
+    private val previewCaptureSessionStateCallback = object : CameraCaptureSession.StateCallback() {
+        override fun onConfigured(session: CameraCaptureSession) {
+            stateMachine.make(PreviewCaptureSessionConfiguredAction(session))
+        }
+
+        override fun onConfigureFailed(session: CameraCaptureSession) {
+            shortToast(R.string.unable_to_start_preview)
         }
     }
+
+    private val recordingCaptureSessionStateCallback = object : CameraCaptureSession.StateCallback() {
+        override fun onConfigured(session: CameraCaptureSession) {
+            stateMachine.make(RecordingCaptureSessionConfiguredAction(session))
+        }
+
+        override fun onConfigureFailed(session: CameraCaptureSession) {
+            shortToast(R.string.unable_to_start_recording)
+        }
+    }
+
+    private val videoImageButtonListener = OnClickListener {
+        stateMachine.make(
+            VideoImageButtonClickedAction(
+                videoFolderName = FOLDER_NAME,
+                recordingCaptureSessionStateCallback = recordingCaptureSessionStateCallback,
+                previewCaptureSessionStateCallback = previewCaptureSessionStateCallback,
+                videoImageButton = videoImageButton,
+                cameraTextureView = cameraTextureView,
+                chronometer = chronometer,
+                activity = this
+            )
+        )
+    }
+
+//    private val captureCallback = object : CaptureCallback() {
+//        override fun onCaptureCompleted(
+//            session: CameraCaptureSession,
+//            request: CaptureRequest,
+//            result: TotalCaptureResult
+//        ) {
+//            super.onCaptureCompleted(session, request, result)
+//
+//            if (captureState == State.WAIT_LOCK) {
+//                captureState = State.PREVIEW
+//
+//                val afState = result[CONTROL_AF_STATE]
+//                if (afState == CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
+//                    requestToStartStillCapture()
+//                }
+//            }
+//        }
+//    }
 
     private lateinit var recordCaptureSession: CameraCaptureSession
 
-    private val recordCaptureCallback = object : CaptureCallback() {
-        override fun onCaptureCompleted(
-            session: CameraCaptureSession,
-            request: CaptureRequest,
-            result: TotalCaptureResult
-        ) {
-            super.onCaptureCompleted(session, request, result)
-
-            if (captureState == State.WAIT_LOCK) {
-                captureState = State.PREVIEW
-
-                val afState = result[CONTROL_AF_STATE]
-                if (afState == CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-                    requestToStartStillCapture()
-                }
-            }
-        }
-    }
+    private lateinit var stateMachine: MainScreenActivityStateMachine
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main_screen)
 
-        videoFolder = ensureVideoFolder(FOLDER_NAME)
+        stateMachine = MainScreenActivityStateMachine()
 
-        recognizerImageButton.setOnClickListener {
-            val recognizer = recognizerThread
-
-            if (recognizer == null) {
-                startRecognizerThread(FPS)
-            } else {
-                stopRecognizerThread()
-            }
-        }
-
-        videoImageButton.setOnClickListener {
-            if (isRecording) {
-                isRecording = false
-
-                videoImageButton.setImageResource(R.mipmap.btn_video_online)
-
-                mediaRecorder.stop()
-                mediaRecorder.reset()
-                startPreview()
-
-                chronometer.stop()
-                chronometer.visibility = INVISIBLE
-            } else {
-                checkWriteStoragePermission()
-            }
-        }
+        recognizerImageButton.setOnClickListener(recognizerImageButtonListener)
+        videoImageButton.setOnClickListener(videoImageButtonListener)
     }
 
     override fun onResume() {
         super.onResume()
 
-        startCaptureThread()
-
-        if (cameraTextureView.isAvailable) {
-            setupCamera(cameraTextureView.width, cameraTextureView.height)
-        } else {
-            cameraTextureView.surfaceTextureListener = surfaceTextureListener
-        }
+        stateMachine.make(ActivityResumedAction(cameraTextureView, surfaceTextureListener))
     }
 
     override fun onPause() {
-        cameraDevice!!.close()
-        cameraDevice = null
-
-        stopCaptureThread()
+        stateMachine.make(ActivityPausedAction)
 
         super.onPause()
     }
@@ -256,322 +231,120 @@ class MainScreenActivity : AppCompatActivity() {
                 if (grantResults[0] != PERMISSION_GRANTED) {
                     shortToast(R.string.no_write_external_storage_permission)
                 } else {
-                    startRecording()
+                    stateMachine.make(
+                        VideoImageButtonClickedAction(
+                            videoFolderName = FOLDER_NAME,
+                            recordingCaptureSessionStateCallback = recordingCaptureSessionStateCallback,
+                            previewCaptureSessionStateCallback = previewCaptureSessionStateCallback,
+                            videoImageButton = videoImageButton,
+                            cameraTextureView = cameraTextureView,
+                            chronometer = chronometer,
+                            activity = this
+                        )
+                    )
                 }
             }
         }
     }
 
-    private fun setupCamera(width: Int, height: Int) {
-        val cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
-
-        cameraId = cameraManager.findBackCameraId()
-        val cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId)
-
-        val deviceRotation = windowManager.defaultDisplay.rotation  // TODO: research video rotation (#3)
-        totalRotation = sensorToDeviceRotation(
-            cameraCharacteristics,
-            deviceRotation
-        )
-
-        val swapMetrics = totalRotation == 90 || totalRotation == 270
-
-        val (rotatedWidth, rotatedHeight) = when (swapMetrics) {
-            false -> width to height
-            true -> height to width
-        }
-
-        previewSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]!!
-            .getOutputSizes(SurfaceTexture::class.java)
-            .chooseOptimalSize(rotatedWidth, rotatedHeight)
-
-        videoSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]!!
-            .getOutputSizes(MediaRecorder::class.java)
-            .chooseOptimalSize(rotatedWidth, rotatedHeight)
-
-        imageSize = cameraCharacteristics[SCALER_STREAM_CONFIGURATION_MAP]!!
-            .getOutputSizes(ImageFormat.JPEG)
-            .chooseOptimalSize(rotatedWidth, rotatedHeight)
-
-        imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, ImageFormat.JPEG, 1).apply {
-            setOnImageAvailableListener(onImageAvailableListener, captureThread!!.handler)
-        }
-
-        fun connectCamera() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (checkSelfPermission(this, CAMERA) == PERMISSION_GRANTED) {
-                    cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThread!!.handler)
-                } else {
-                    if (shouldShowRequestPermissionRationale(CAMERA)) {
-                        shortToast(R.string.no_camera_permission)
-                    }
-
-                    requestPermissions(arrayOf(CAMERA), RequestCode.CAMERA.ordinal)
-                }
-            } else {
-                cameraManager.openCamera(cameraId, cameraDeviceStateCallback, captureThread!!.handler)
-            }
-        }
-
-        connectCamera()
-    }
-
-    private fun startPreview() {
-        val surfaceTexture = cameraTextureView.surfaceTexture
-        surfaceTexture.setDefaultBufferSize(previewSize.width, previewSize.height)
-        val previewSurface = Surface(surfaceTexture)
-
-        captureRequestBuilder = cameraDevice!!.createCaptureRequest(TEMPLATE_PREVIEW).apply {
-            addTarget(previewSurface)
-        }
-
-        val stateCallback = object : CameraCaptureSession.StateCallback() {
-            override fun onConfigured(session: CameraCaptureSession) {
-                previewCaptureSession = session.apply {
-                    setRepeatingRequest(captureRequestBuilder.build(), null, captureThread!!.handler)
-                }
-            }
-
-            override fun onConfigureFailed(session: CameraCaptureSession) {
-                shortToast(R.string.unable_to_start_preview)
-            }
-        }
-
-        cameraDevice!!.createCaptureSession(listOf(previewSurface, imageReader.surface), stateCallback, null)
-    }
-
-    private fun requestToStartStillCapture() {
-        captureRequestBuilder = if (isRecording) {
-            cameraDevice!!.createCaptureRequest(TEMPLATE_VIDEO_SNAPSHOT)
-        } else {
-            cameraDevice!!.createCaptureRequest(TEMPLATE_STILL_CAPTURE)
-        }
-
-        captureRequestBuilder.apply {
-            addTarget(imageReader.surface)
-            this[JPEG_ORIENTATION] = totalRotation
-        }
-
-        if (isRecording) {
-            recordCaptureSession.capture(captureRequestBuilder.build(), null, null)
-        } else {
-            previewCaptureSession.capture(captureRequestBuilder.build(), null, null)
-        }
-    }
-
-    private fun startCaptureThread() {
-        val thread = HandlerThread("Driver Assistant Capture Thread")
-        thread.start()
-
-        captureThread = thread
-    }
-
-    private fun stopCaptureThread() {
-        captureThread!!.apply {
-            quitSafely()
-            join()
-        }
-
-        captureThread = null
-    }
-
-    private fun startRecognizerThread(fps: Double) {
-        val thread = HandlerThread("Driver Assistant Recognizer Thread")
-        thread.start()
-        val handler = thread.handler
-
-        recognizersRunner = object : LoopWithDelay(handler, (1000 / fps).roundToLong()) {
-            override fun iterate() {
-                lockFocusToTakeShot()
-                val latestImage = waitForImage()
-
-                val statsText = with(latestImage) { "${bytes.size} bytes, $width x $height" }
-                statsTextView.post { statsTextView.text = statsText }
-
-                val paintables = recognizers
-                    .flatMap { recognizer -> recognizer.recognize(latestImage) }
-                    .flatMap { recognizedObject -> recognizedObject.elements }
-                    .map { recognizedObjectElement -> recognizedObjectElement.toPaintableOnCanvas() }
-
-                recognizedObjectsView.paintables = paintables
-                recognizedObjectsView.invalidate()
-            }
-
-            private fun waitForImage(): LatestImage {
-                val activity = this@MainScreenActivity
-
-                while (true) {
-                    val latestImage = activity.latestImage
-
-                    if (latestImage != null) {
-                        activity.latestImage = null
-
-                        return latestImage
-                    }
-                }
-            }
-        }
-
-        handler.post(recognizersRunner)
-
-        recognizerThread = thread
-    }
-
-    private fun stopRecognizerThread() {
-        recognizerThread!!.apply {
-            handler.removeCallbacks(recognizersRunner)
-
-            quitSafely()
-            join()
-        }
-
-        recognizedObjectsView.paintables = emptyList()
-        recognizedObjectsView.invalidate()
-        statsTextView.text = ""
-
-        recognizerThread = null
-    }
-
-    private fun startRecording() {
-        isRecording = true
-        videoImageButton.setImageResource(R.mipmap.btn_video_busy)
-
-        videoFilePath = createVideoFile(videoFolder).absolutePath
-
-        mediaRecorder.init()
-
-        val surfaceTexture = cameraTextureView.surfaceTexture
-        surfaceTexture.setDefaultBufferSize(previewSize.width, previewSize.height)
-        val previewSurface = Surface(surfaceTexture)
-        val recordSurface = mediaRecorder.surface
-
-        captureRequestBuilder = cameraDevice!!.createCaptureRequest(TEMPLATE_RECORD).apply {
-            addTarget(previewSurface)
-            addTarget(recordSurface)
-        }
-
-        cameraDevice!!.createCaptureSession(
-            listOf(previewSurface, recordSurface, imageReader.surface),
-            object : CameraCaptureSession.StateCallback() {
-                override fun onConfigured(session: CameraCaptureSession) {
-                    recordCaptureSession = session.apply {
-                        setRepeatingRequest(captureRequestBuilder.build(), null, null)
-                    }
-                }
-
-                override fun onConfigureFailed(session: CameraCaptureSession) {
-                    shortToast(R.string.unable_to_start_recording)
-                }
-            },
-            null
-        )
-
-        mediaRecorder.start()
-
-        chronometer.base = SystemClock.elapsedRealtime()
-        chronometer.visibility = VISIBLE
-        chronometer.start()
-    }
-
-    private fun checkWriteStoragePermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(this, WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED) {
-                startRecording()
-            } else {
-                if (shouldShowRequestPermissionRationale(WRITE_EXTERNAL_STORAGE)) {
-                    shortToast(R.string.no_write_external_storage_permission)
-                }
-                requestPermissions(
-                    arrayOf(WRITE_EXTERNAL_STORAGE),
-                    RequestCode.WRITE_EXTERNAL_STORAGE.ordinal
-                )
-            }
-        } else {
-            startRecording()
-        }
-    }
-
-    fun lockFocusToTakeShot() {
-        captureState = State.WAIT_LOCK
-        captureRequestBuilder[CONTROL_AF_TRIGGER] = CONTROL_AF_TRIGGER_START
-
-        if (isRecording) {
-            recordCaptureSession.capture(
-                captureRequestBuilder.build(),
-                recordCaptureCallback,
-                captureThread!!.handler
-            )
-        } else {
-            previewCaptureSession.capture(
-                captureRequestBuilder.build(),
-                previewCaptureCallback,
-                captureThread!!.handler
-            )
-        }
-    }
-
-    private fun MediaRecorder.init() {
-        setVideoSource(SURFACE)
-        setOutputFormat(MPEG_4)
-        setOutputFile(videoFilePath)
-        setVideoEncodingBitRate(5_000_000)
-        setVideoFrameRate(30)
-        setVideoSize(videoSize.width, videoSize.height)
-        setVideoEncoder(H264)
-        setOrientationHint(totalRotation)
-        prepare()
-    }
-
-    private fun shortToast(resId: Int) {
-        Toast.makeText(applicationContext, resId, LENGTH_SHORT).show()
-    }
+//    private fun requestToStartStillCapture() {
+//        captureRequestBuilder = if (isRecording) {
+//            cameraDevice!!.createCaptureRequest(TEMPLATE_VIDEO_SNAPSHOT)
+//        } else {
+//            cameraDevice!!.createCaptureRequest(TEMPLATE_STILL_CAPTURE)
+//        }
+//
+//        captureRequestBuilder.apply {
+//            addTarget(imageReader.surface)
+//            this[JPEG_ORIENTATION] = totalRotation
+//        }
+//
+//        if (isRecording) {
+//            recordCaptureSession.capture(captureRequestBuilder.build(), null, null)
+//        } else {
+//            previewCaptureSession.capture(captureRequestBuilder.build(), null, null)
+//        }
+//    }
+//
+//    private fun startRecognizerThread(fps: Double) {
+//        val thread = HandlerThread("Driver Assistant Recognizer Thread")
+//        thread.start()
+//        val handler = thread.handler
+//
+//        recognizersRunner = object : LoopWithDelay(handler, (1000 / fps).roundToLong()) {
+//            override fun iterate() {
+//                lockFocusToTakeShot()
+//                val latestImage = waitForImage()
+//
+//                val statsText = with(latestImage) { "${bytes.size} bytes, $width x $height" }
+//                statsTextView.post { statsTextView.text = statsText }
+//
+//                val paintables = recognizers
+//                    .flatMap { recognizer -> recognizer.recognize(latestImage) }
+//                    .flatMap { recognizedObject -> recognizedObject.elements }
+//                    .map { recognizedObjectElement -> recognizedObjectElement.toPaintableOnCanvas() }
+//
+//                recognizedObjectsView.paintables = paintables
+//                recognizedObjectsView.invalidate()
+//            }
+//
+//            private fun waitForImage(): LatestImage {
+//                val activity = this@MainScreenActivity
+//
+//                while (true) {
+//                    val latestImage = activity.latestImage
+//
+//                    if (latestImage != null) {
+//                        activity.latestImage = null
+//
+//                        return latestImage
+//                    }
+//                }
+//            }
+//        }
+//
+//        handler.post(recognizersRunner)
+//
+//        recognizerThread = thread
+//    }
+//
+//    private fun stopRecognizerThread() {
+//        recognizerThread!!.apply {
+//            handler.removeCallbacks(recognizersRunner)
+//
+//            quitSafely()
+//            join()
+//        }
+//
+//        recognizedObjectsView.paintables = emptyList()
+//        recognizedObjectsView.invalidate()
+//        statsTextView.text = ""
+//
+//        recognizerThread = null
+//    }
+//
+//    fun lockFocusToTakeShot() {
+//        captureState = State.WAIT_LOCK
+//        captureRequestBuilder[CONTROL_AF_TRIGGER] = CONTROL_AF_TRIGGER_START
+//
+//        if (isRecording) {
+//            recordCaptureSession.capture(
+//                captureRequestBuilder.build(),
+//                captureCallback,
+//                captureThread!!.handler
+//            )
+//        } else {
+//            previewCaptureSession.capture(
+//                captureRequestBuilder.build(),
+//                captureCallback,
+//                captureThread!!.handler
+//            )
+//        }
+//    }
 
     companion object {
         private const val FPS = 5.0
 
         private const val FOLDER_NAME = "driver-assistant/"
-
-        private val Size.area get() = this.width.toLong() * this.height.toLong()
-
-        private val sizeComparatorByArea = Comparator<Size> { lhs, rhs -> (lhs.area - rhs.area).sign }
-
-        private fun Int.toOrientation() = when (this) {
-            Surface.ROTATION_0 -> 0
-            Surface.ROTATION_90 -> 90
-            Surface.ROTATION_180 -> 180
-            Surface.ROTATION_270 -> 270
-            else -> throw IllegalArgumentException("$this")
-        }
-
-        private fun sensorToDeviceRotation(cameraCharacteristics: CameraCharacteristics, deviceRotation: Int): Int {
-            val sensorOrientation = cameraCharacteristics[SENSOR_ORIENTATION]!!
-            val deviceOrientation = deviceRotation.toOrientation()
-
-            return (sensorOrientation + deviceOrientation + 360) % 360
-        }
-
-        private fun CameraManager.findBackCameraId() = this
-            .cameraIdList
-            .first { this.cameraFacing(it) == LENS_FACING_BACK }
-
-        private fun CameraManager.cameraFacing(cameraId: String) = this
-            .getCameraCharacteristics(cameraId)[LENS_FACING]
-
-        private fun Array<Size>.chooseOptimalSize(width: Int, height: Int) = this
-            .filter { it.width >= width && it.height >= height }
-            .minWith(sizeComparatorByArea)
-            ?: this.first()
-
-        private val HandlerThread.handler get() = Handler(this.looper)
-
-        enum class RequestCode {
-            CAMERA,
-            WRITE_EXTERNAL_STORAGE;
-        }
-
-        enum class State {
-            PREVIEW,
-            WAIT_LOCK;
-        }
     }
 }
