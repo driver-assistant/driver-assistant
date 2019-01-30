@@ -9,6 +9,10 @@ import android.view.TextureView
 import android.view.TextureView.SurfaceTextureListener
 import android.widget.Chronometer
 import android.widget.ImageButton
+import android.widget.TextView
+import io.github.driverassistant.RecognizedObjectsView
+import io.github.driverassistant.recognizer.LatestImage
+import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.util.state.Action
 import java.io.File
 
@@ -41,9 +45,13 @@ class CameraClosedAction(
 ) : MainScreenActivityAction()
 
 class RecognizerImageButtonClickedAction(
-    val fps: Double
+    val fps: Double,
+    val recognizedObjectsView: RecognizedObjectsView,
+    val statsTextView: TextView,
+    val recognizers: Iterable<Recognizer>
 ) : MainScreenActivityAction()
 
+// TODO: rename to smth like "RecordSwitchAction"
 class VideoImageButtonClickedAction(
     val activity: Activity,
     val videoFolderName: String,
@@ -60,4 +68,8 @@ class PreviewCaptureSessionConfiguredAction(
 
 class RecordingCaptureSessionConfiguredAction(
     val recordingCaptureSession: CameraCaptureSession
+) : MainScreenActivityAction()
+
+class ImageShotAction(
+    val latestImage: LatestImage
 ) : MainScreenActivityAction()

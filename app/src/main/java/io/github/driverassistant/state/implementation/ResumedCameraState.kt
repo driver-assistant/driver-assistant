@@ -1,8 +1,7 @@
 package io.github.driverassistant.state.implementation
 
 import android.os.HandlerThread
-import io.github.driverassistant.PreviewingCamera
-import io.github.driverassistant.SetUpCamera
+import io.github.driverassistant.util.camera.SetUpCamera
 import io.github.driverassistant.state.ActivityPausedAction
 import io.github.driverassistant.state.CameraOpenedAction
 import io.github.driverassistant.state.MainScreenActivityAction

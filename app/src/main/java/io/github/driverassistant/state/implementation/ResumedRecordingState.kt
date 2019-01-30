@@ -2,13 +2,15 @@ package io.github.driverassistant.state.implementation
 
 import android.hardware.camera2.CameraCaptureSession
 import android.os.HandlerThread
-import android.view.View
 import android.view.View.INVISIBLE
 import io.github.driverassistant.*
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
 import io.github.driverassistant.state.VideoImageButtonClickedAction
 import io.github.driverassistant.state.common.startPreview
+import io.github.driverassistant.util.camera.PreviewingCamera
+import io.github.driverassistant.util.camera.RecordingCamera
+import io.github.driverassistant.util.camera.SetUpCamera
 import io.github.driverassistant.util.postApply
 
 class ResumedRecordingState(

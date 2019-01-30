@@ -7,4 +7,10 @@ val permissionsAvailableOnThisAndroidVersion = Build.VERSION.SDK_INT >= Build.VE
 enum class RequestCode {
     CAMERA,
     WRITE_EXTERNAL_STORAGE;
+
+    val id: Int get() = ordinal
+
+    companion object {
+        fun byId(id: Int) = RequestCode.values()[id]
+    }
 }

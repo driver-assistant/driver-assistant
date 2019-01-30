@@ -1,24 +1,27 @@
 package io.github.driverassistant.state.implementation
 
+import android.hardware.camera2.CameraCaptureSession
 import android.os.HandlerThread
 import io.github.driverassistant.util.camera.PreviewingCamera
+import io.github.driverassistant.RecognizersRunner
 import io.github.driverassistant.util.camera.SetUpCamera
+import io.github.driverassistant.state.ImageShotAction
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
-import io.github.driverassistant.state.PreviewCaptureSessionConfiguredAction
-import io.github.driverassistant.util.handler
+import io.github.driverassistant.state.RecognizerImageButtonClickedAction
+import io.github.driverassistant.state.common.cleanRecognizersScreen
 
-class WaitingForPreviewSessionState(
+class ResumedRecognizerPreviewState(
     private val setUpCamera: SetUpCamera,
     private val previewingCamera: PreviewingCamera,
-    private val captureThread: HandlerThread
+    private val captureThread: HandlerThread,
+    private val previewCaptureSession: CameraCaptureSession,
+    private val recognizersRunner: RecognizersRunner
 ) : MainScreenActivityState() {
 
     override fun consume(action: MainScreenActivityAction): MainScreenActivityState = when (action) {
-        is PreviewCaptureSessionConfiguredAction -> {
-            val previewCaptureSession = action.previewCaptureSession.apply {
-                setRepeatingRequest(previewingCamera.captureRequestBuilder.build(), null, captureThread.handler)
-            }
+        is RecognizerImageButtonClickedAction -> {
+            cleanRecognizersScreen(action.recognizedObjectsView, action.statsTextView)
 
             ResumedPreviewState(
                 setUpCamera = setUpCamera,
@@ -26,6 +29,12 @@ class WaitingForPreviewSessionState(
                 captureThread = captureThread,
                 previewCaptureSession = previewCaptureSession
             )
+        }
+
+        is ImageShotAction -> {
+            recognizersRunner.recognize(action.latestImage)
+
+            this
         }
 
         else -> super.consume(action)

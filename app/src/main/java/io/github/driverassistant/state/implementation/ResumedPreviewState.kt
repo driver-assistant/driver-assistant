@@ -4,6 +4,7 @@ import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraDevice.TEMPLATE_STILL_CAPTURE
 import android.media.MediaRecorder
 import android.os.HandlerThread
 import android.os.SystemClock
@@ -18,6 +19,10 @@ import android.widget.ImageButton
 import io.github.driverassistant.*
 import io.github.driverassistant.state.*
 import io.github.driverassistant.util.*
+import io.github.driverassistant.util.camera.PreviewingCamera
+import io.github.driverassistant.util.camera.RecordingCamera
+import io.github.driverassistant.util.camera.SetUpCamera
+import io.github.driverassistant.util.camera.ShootingCamera
 
 class ResumedPreviewState(
     private val setUpCamera: SetUpCamera,
@@ -44,7 +49,7 @@ class ResumedPreviewState(
                 requestPermissions(
                     action.activity,
                     arrayOf(WRITE_EXTERNAL_STORAGE),
-                    RequestCode.WRITE_EXTERNAL_STORAGE.ordinal
+                    RequestCode.WRITE_EXTERNAL_STORAGE.id
                 )
 
                 this
@@ -72,7 +77,32 @@ class ResumedPreviewState(
         }
 
         is RecognizerImageButtonClickedAction -> {
-            TODO()
+            val shootingCamera = ShootingCamera(
+                captureSession = previewCaptureSession,
+                requestTemplateType = TEMPLATE_STILL_CAPTURE,
+                setUpCamera = setUpCamera,
+                captureThread = captureThread,
+                previewingCamera = previewingCamera
+            )
+
+            val recognizersRunner = RecognizersRunner(
+                fps = action.fps,
+                statsTextView = action.statsTextView,
+                recognizedObjectsView = action.recognizedObjectsView,
+                recognizers = action.recognizers,
+                shootingCamera = shootingCamera,
+                captureThread = captureThread
+            )
+
+            shootingCamera.submitRequestForNextShot()
+
+            ResumedRecognizerPreviewState(
+                setUpCamera = setUpCamera,
+                previewingCamera = previewingCamera,
+                captureThread = captureThread,
+                previewCaptureSession = previewCaptureSession,
+                recognizersRunner = recognizersRunner
+            )
         }
 
         else -> super.consume(action)
@@ -127,7 +157,6 @@ class ResumedPreviewState(
             }
 
             return RecordingCamera(
-                previewSurface = previewSurface,
                 recordSurface = recordSurface,
                 mediaRecorder = mediaRecorder
             )
