@@ -1,5 +1,7 @@
 package io.github.driverassistant.util.state
 
+import android.util.Log
+
 open class StateMachine<in ActionType : Action, StateType : State<ActionType, StateType>>(initialState: StateType) {
     private var currentState: StateType = initialState
 
@@ -9,7 +11,7 @@ open class StateMachine<in ActionType : Action, StateType : State<ActionType, St
                 val nextState = currentState.consume(action)
 
                 if (nextState !== currentState) {
-                    println("${currentState.javaClass.simpleName} -> ${nextState.javaClass.simpleName}")
+                    Log.i(TAG, "${currentState.javaClass.simpleName} -> ${nextState.javaClass.simpleName}")
                 }
 
                 currentState = nextState
@@ -20,6 +22,8 @@ open class StateMachine<in ActionType : Action, StateType : State<ActionType, St
     }
 
     companion object {
+        private const val TAG = "StateMachine"
+
         class StateSwitchException(message: String, cause: Throwable) : Exception(message, cause) {
             override fun toString(): String {
                 return "$message, cause: $cause"
