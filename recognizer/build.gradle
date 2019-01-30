@@ -3,6 +3,6 @@ apply plugin: "kotlin"
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "com.android.support:support-v4:27.1.1"
+    implementation "com.android.support:support-v4:$android_support_version"
     testImplementation "junit:junit:4.12"
 }
