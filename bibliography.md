@@ -15,6 +15,9 @@
 ## State machine
 - <https://robots.thoughtbot.com/finite-state-machines-android-kotlin-good-times>
 
+## Gradle
+- <https://stackoverflow.com/questions/20404476/how-to-define-common-android-properties-for-all-modules-using-gradle>
+
 ## Huge resources
 - <http://developer.alexanderklimov.ru/android/>
 - <https://developer.android.com/guide/>
