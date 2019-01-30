@@ -1,4 +1,5 @@
 rootProject.name = "Driver Assistant"
 
 include ":app"
+include ":util"
 include ":recognizer"

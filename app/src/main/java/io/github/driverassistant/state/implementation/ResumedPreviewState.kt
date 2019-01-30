@@ -17,6 +17,7 @@ import android.view.View
 import android.widget.Chronometer
 import android.widget.ImageButton
 import io.github.driverassistant.*
+import io.github.driverassistant.R
 import io.github.driverassistant.state.*
 import io.github.driverassistant.util.*
 import io.github.driverassistant.util.camera.PreviewingCamera

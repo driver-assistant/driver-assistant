@@ -17,6 +17,7 @@ import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AppCompatActivity
 import android.util.Size
 import io.github.driverassistant.*
+import io.github.driverassistant.R
 import io.github.driverassistant.state.ActivityPausedAction
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
