@@ -8,7 +8,9 @@ open class StateMachine<in ActionType : Action, StateType : State<ActionType, St
             try {
                 val nextState = currentState.consume(action)
 
-                println("${currentState.javaClass.simpleName} -> ${nextState.javaClass.simpleName}")
+                if (nextState !== currentState) {
+                    println("${currentState.javaClass.simpleName} -> ${nextState.javaClass.simpleName}")
+                }
 
                 currentState = nextState
             } catch (t: Throwable) {

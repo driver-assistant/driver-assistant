@@ -2,12 +2,11 @@ package io.github.driverassistant.state.common
 
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CaptureRequest
 import android.media.ImageReader
 import android.util.Size
 import android.view.Surface
 import android.view.TextureView
-import io.github.driverassistant.PreviewingCamera
+import io.github.driverassistant.util.camera.PreviewingCamera
 
 fun startPreview(
     cameraTextureView: TextureView,
@@ -33,6 +32,7 @@ fun startPreview(
 
     return PreviewingCamera(
         captureRequestBuilder = captureRequestBuilder,
-        cameraDevice = cameraDevice
+        cameraDevice = cameraDevice,
+        previewSurface = previewSurface
     )
 }

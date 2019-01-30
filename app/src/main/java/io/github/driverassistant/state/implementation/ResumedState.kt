@@ -1,11 +1,8 @@
 package io.github.driverassistant.state.implementation
 
-import android.Manifest
 import android.Manifest.permission.CAMERA
 import android.app.Activity
-import android.content.pm.PackageManager
 import android.content.pm.PackageManager.PERMISSION_GRANTED
-import android.graphics.ImageFormat
 import android.graphics.ImageFormat.JPEG
 import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCharacteristics
@@ -16,7 +13,6 @@ import android.media.ImageReader
 import android.media.MediaRecorder
 import android.os.HandlerThread
 import android.support.v4.app.ActivityCompat
-import android.support.v4.content.ContextCompat
 import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AppCompatActivity
 import android.util.Size
@@ -27,6 +23,10 @@ import io.github.driverassistant.state.MainScreenActivityState
 import io.github.driverassistant.state.SurfaceTextureAvailableAction
 import io.github.driverassistant.state.common.stopCaptureThread
 import io.github.driverassistant.util.*
+import io.github.driverassistant.util.camera.SetUpCamera
+import io.github.driverassistant.util.camera.chooseOptimalSize
+import io.github.driverassistant.util.camera.findBackCameraId
+import io.github.driverassistant.util.camera.sensorToDeviceRotation
 import kotlin.math.sign
 
 class ResumedState(private val captureThread: HandlerThread) : MainScreenActivityState() {
@@ -68,7 +68,8 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
             val cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId)
 
             val deviceRotation = activity.windowManager.defaultDisplay.rotation  // TODO: research video rotation (#3)
-            val totalRotation = sensorToDeviceRotation(cameraCharacteristics, deviceRotation)
+            val totalRotation =
+                sensorToDeviceRotation(cameraCharacteristics, deviceRotation)
 
             val swapMetrics = totalRotation == 90 || totalRotation == 270
 
@@ -90,7 +91,7 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
                 .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
             val imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, JPEG, 1).apply {
-                setOnImageAvailableListener(onImageAvailableListener, captureThread.handler)  // TODO: use another thread
+                setOnImageAvailableListener(onImageAvailableListener, captureThread.handler)
             }
 
             while (
@@ -104,7 +105,7 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
                 ActivityCompat.requestPermissions(
                     activity,
                     arrayOf(CAMERA),
-                    RequestCode.CAMERA.ordinal
+                    RequestCode.CAMERA.id
                 )
             }
 
@@ -120,21 +121,5 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
                 imageReader = imageReader
             )
         }
-
-        private fun CameraManager.findBackCameraId() = this
-            .cameraIdList
-            .first { this.cameraFacing(it) == CameraMetadata.LENS_FACING_BACK }
-
-        private fun CameraManager.cameraFacing(cameraId: String) = this
-            .getCameraCharacteristics(cameraId)[CameraCharacteristics.LENS_FACING]
-
-        private val Size.area get() = this.width.toLong() * this.height.toLong()
-
-        private val sizeComparatorByArea = Comparator<Size> { lhs, rhs -> (lhs.area - rhs.area).sign }
-
-        private fun Array<Size>.chooseOptimalSize(width: Int, height: Int) = this
-            .filter { it.width >= width && it.height >= height }
-            .minWith(sizeComparatorByArea)
-            ?: this.first()
     }
 }

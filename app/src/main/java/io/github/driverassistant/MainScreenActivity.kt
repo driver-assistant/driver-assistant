@@ -12,6 +12,7 @@ import android.hardware.camera2.CaptureResult.CONTROL_AF_STATE
 import android.media.ImageReader
 import android.os.*
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.util.Size
 import android.view.TextureView.SurfaceTextureListener
 import android.view.View
@@ -27,16 +28,12 @@ import java.io.File
 import kotlin.math.roundToLong
 
 class MainScreenActivity : AppCompatActivity() {
-
-    var latestImage: LatestImage? = null
-
-    private lateinit var recognizersRunner: LoopWithDelay
-
     private val recognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
 
-    private var recognizerThread: HandlerThread? = null
-
-    private var captureState = State.PREVIEW
+    private var recognizerThread = HandlerThread("Driver Assistant Recognizer Thread").apply {
+        isDaemon = true
+        start()
+    }
 
     private val surfaceTextureListener = object : SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
@@ -58,8 +55,6 @@ class MainScreenActivity : AppCompatActivity() {
         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?) = true
     }
 
-    private var cameraDevice: CameraDevice? = null
-
     private val cameraDeviceStateCallback = object : CameraDevice.StateCallback() {
         override fun onOpened(camera: CameraDevice) {
             stateMachine.make(CameraOpenedAction(camera, cameraTextureView, previewCaptureSessionStateCallback))
@@ -74,53 +69,46 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-    private lateinit var cameraId: String
-
-    private lateinit var previewSize: Size
-
-    private lateinit var videoSize: Size
-
-    private lateinit var imageSize: Size
-
-    private lateinit var imageReader: ImageReader
+    private var previousImageShotTime = System.currentTimeMillis()
 
     private val onImageAvailableListener = ImageReader.OnImageAvailableListener { imageReader ->
-        imageReader.acquireLatestImage().apply {
-            val buffer = planes[0].buffer
+        recognizerThread.handler.post {
+            val startTime = System.currentTimeMillis()
+            val delta = startTime - previousImageShotTime
+            val actualFps = 1000.0 / delta.toDouble()
 
-            val latestImageBytes = ByteArray(buffer.remaining())
-            buffer.get(latestImageBytes)
+            Log.d(TAG, "Time after previous image: $delta ms, actual fps: $actualFps")
 
-            latestImage = LatestImage(latestImageBytes, width, height)
+            imageReader.acquireNextImage()?.apply {
+                val buffer = planes[0].buffer
 
-            println("Image is shoot: $width x $height")
+                val latestImageBytes = ByteArray(buffer.remaining())
+                buffer.get(latestImageBytes)
 
-            close()
+                Log.d(TAG, "Image copied after ${System.currentTimeMillis() - startTime} ms")
+
+                val latestImage = LatestImage(latestImageBytes, width, height)
+
+                stateMachine.make(ImageShotAction(latestImage))
+
+                close()
+            }
+
+            Log.d(TAG, "Image closed after ${System.currentTimeMillis() - startTime} ms")
+
+            previousImageShotTime = startTime
         }
     }
 
-    private var totalRotation = 0
-
-    private var captureThread: HandlerThread? = null
-
-    private lateinit var captureRequestBuilder: CaptureRequest.Builder
-
-    private var isRecording = false
-
-    private lateinit var videoFolder: File
-
-    private lateinit var previewCaptureSession: CameraCaptureSession
-
     private val recognizerImageButtonListener = OnClickListener {
-        stateMachine.make(RecognizerImageButtonClickedAction(FPS))
-
-//        val recognizer = recognizerThread
-//
-//        if (recognizer == null) {
-//            startRecognizerThread(FPS)
-//        } else {
-//            stopRecognizerThread()
-//        }
+        stateMachine.make(
+            RecognizerImageButtonClickedAction(
+                fps = FPS,
+                recognizedObjectsView = recognizedObjectsView,
+                statsTextView = statsTextView,
+                recognizers = recognizers
+            )
+        )
     }
 
     private val previewCaptureSessionStateCallback = object : CameraCaptureSession.StateCallback() {
@@ -157,27 +145,6 @@ class MainScreenActivity : AppCompatActivity() {
         )
     }
 
-//    private val captureCallback = object : CaptureCallback() {
-//        override fun onCaptureCompleted(
-//            session: CameraCaptureSession,
-//            request: CaptureRequest,
-//            result: TotalCaptureResult
-//        ) {
-//            super.onCaptureCompleted(session, request, result)
-//
-//            if (captureState == State.WAIT_LOCK) {
-//                captureState = State.PREVIEW
-//
-//                val afState = result[CONTROL_AF_STATE]
-//                if (afState == CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CONTROL_AF_STATE_NOT_FOCUSED_LOCKED) {
-//                    requestToStartStillCapture()
-//                }
-//            }
-//        }
-//    }
-
-    private lateinit var recordCaptureSession: CameraCaptureSession
-
     private lateinit var stateMachine: MainScreenActivityStateMachine
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -206,14 +173,14 @@ class MainScreenActivity : AppCompatActivity() {
         super.onWindowFocusChanged(hasFocus)
 
         if (hasFocus) {
-            window.decorView.hideStatusAndNavigationBars(hasFocus)
+            window.decorView.hideStatusAndNavigationBars()
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        when (RequestCode.values()[requestCode]) {
+        when (RequestCode.byId(requestCode)) {
             RequestCode.CAMERA -> {
                 if (grantResults[0] != PERMISSION_GRANTED) {
                     shortToast(R.string.no_camera_permission)
@@ -240,102 +207,11 @@ class MainScreenActivity : AppCompatActivity() {
         }
     }
 
-//    private fun requestToStartStillCapture() {
-//        captureRequestBuilder = if (isRecording) {
-//            cameraDevice!!.createCaptureRequest(TEMPLATE_VIDEO_SNAPSHOT)
-//        } else {
-//            cameraDevice!!.createCaptureRequest(TEMPLATE_STILL_CAPTURE)
-//        }
-//
-//        captureRequestBuilder.apply {
-//            addTarget(imageReader.surface)
-//            this[JPEG_ORIENTATION] = totalRotation
-//        }
-//
-//        if (isRecording) {
-//            recordCaptureSession.capture(captureRequestBuilder.build(), null, null)
-//        } else {
-//            previewCaptureSession.capture(captureRequestBuilder.build(), null, null)
-//        }
-//    }
-//
-//    private fun startRecognizerThread(fps: Double) {
-//        val thread = HandlerThread("Driver Assistant Recognizer Thread")
-//        thread.start()
-//        val handler = thread.handler
-//
-//        recognizersRunner = object : LoopWithDelay(handler, (1000 / fps).roundToLong()) {
-//            override fun iterate() {
-//                lockFocusToTakeShot()
-//                val latestImage = waitForImage()
-//
-//                val statsText = with(latestImage) { "${bytes.size} bytes, $width x $height" }
-//                statsTextView.post { statsTextView.text = statsText }
-//
-//                val paintables = recognizers
-//                    .flatMap { recognizer -> recognizer.recognize(latestImage) }
-//                    .flatMap { recognizedObject -> recognizedObject.elements }
-//                    .map { recognizedObjectElement -> recognizedObjectElement.toPaintableOnCanvas() }
-//
-//                recognizedObjectsView.paintables = paintables
-//                recognizedObjectsView.invalidate()
-//            }
-//
-//            private fun waitForImage(): LatestImage {
-//                val activity = this@MainScreenActivity
-//
-//                while (true) {
-//                    val latestImage = activity.latestImage
-//
-//                    if (latestImage != null) {
-//                        activity.latestImage = null
-//
-//                        return latestImage
-//                    }
-//                }
-//            }
-//        }
-//
-//        handler.post(recognizersRunner)
-//
-//        recognizerThread = thread
-//    }
-//
-//    private fun stopRecognizerThread() {
-//        recognizerThread!!.apply {
-//            handler.removeCallbacks(recognizersRunner)
-//
-//            quitSafely()
-//            join()
-//        }
-//
-//        recognizedObjectsView.paintables = emptyList()
-//        recognizedObjectsView.invalidate()
-//        statsTextView.text = ""
-//
-//        recognizerThread = null
-//    }
-//
-//    fun lockFocusToTakeShot() {
-//        captureState = State.WAIT_LOCK
-//        captureRequestBuilder[CONTROL_AF_TRIGGER] = CONTROL_AF_TRIGGER_START
-//
-//        if (isRecording) {
-//            recordCaptureSession.capture(
-//                captureRequestBuilder.build(),
-//                captureCallback,
-//                captureThread!!.handler
-//            )
-//        } else {
-//            previewCaptureSession.capture(
-//                captureRequestBuilder.build(),
-//                captureCallback,
-//                captureThread!!.handler
-//            )
-//        }
-//    }
+    val template = TEMPLATE_VIDEO_SNAPSHOT
 
     companion object {
+        private const val TAG = "MainScreenActivity"
+
         private const val FPS = 5.0
 
         private const val FOLDER_NAME = "driver-assistant/"

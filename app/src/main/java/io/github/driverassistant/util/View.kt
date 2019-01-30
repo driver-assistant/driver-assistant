@@ -15,10 +15,8 @@ private const val VISIBILITY_WITHOUT_BARS =
         SYSTEM_UI_FLAG_FULLSCREEN or
         SYSTEM_UI_FLAG_HIDE_NAVIGATION
 
-fun View.hideStatusAndNavigationBars(hasFocus: Boolean) {
-    if (hasFocus) {
-        this.postApply {
-            systemUiVisibility = VISIBILITY_WITHOUT_BARS
-        }
+fun View.hideStatusAndNavigationBars() {
+    this.postApply {
+        systemUiVisibility = VISIBILITY_WITHOUT_BARS
     }
 }
