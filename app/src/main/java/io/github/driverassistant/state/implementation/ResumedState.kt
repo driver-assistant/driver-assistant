@@ -8,27 +8,26 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CameraMetadata
 import android.media.ImageReader
 import android.media.MediaRecorder
 import android.os.HandlerThread
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat.checkSelfPermission
 import android.support.v7.app.AppCompatActivity
-import android.util.Size
-import io.github.driverassistant.*
 import io.github.driverassistant.R
 import io.github.driverassistant.state.ActivityPausedAction
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
 import io.github.driverassistant.state.SurfaceTextureAvailableAction
 import io.github.driverassistant.state.common.stopCaptureThread
-import io.github.driverassistant.util.*
+import io.github.driverassistant.util.RequestCode
 import io.github.driverassistant.util.camera.SetUpCamera
 import io.github.driverassistant.util.camera.chooseOptimalSize
 import io.github.driverassistant.util.camera.findBackCameraId
 import io.github.driverassistant.util.camera.sensorToDeviceRotation
-import kotlin.math.sign
+import io.github.driverassistant.util.handler
+import io.github.driverassistant.util.permissionsAvailableOnThisAndroidVersion
+import io.github.driverassistant.util.shortToast
 
 class ResumedState(private val captureThread: HandlerThread) : MainScreenActivityState() {
     override fun consume(action: MainScreenActivityAction): MainScreenActivityState = when (action) {
@@ -69,8 +68,7 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
             val cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId)
 
             val deviceRotation = activity.windowManager.defaultDisplay.rotation  // TODO: research video rotation (#3)
-            val totalRotation =
-                sensorToDeviceRotation(cameraCharacteristics, deviceRotation)
+            val totalRotation = sensorToDeviceRotation(cameraCharacteristics, deviceRotation)
 
             val swapMetrics = totalRotation == 90 || totalRotation == 270
 
@@ -114,11 +112,9 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
 
             return SetUpCamera(
                 onImageAvailableListener = onImageAvailableListener,
-                cameraId = cameraId,
                 totalRotation = totalRotation,
                 previewSize = previewSize,
                 videoSize = videoSize,
-                imageSize = imageSize,
                 imageReader = imageReader
             )
         }

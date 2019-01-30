@@ -1,10 +1,5 @@
 package io.github.driverassistant
 
-import android.hardware.camera2.*
-import android.hardware.camera2.CameraCharacteristics.*
-import android.hardware.camera2.CaptureRequest.CONTROL_AF_TRIGGER
-import android.hardware.camera2.CaptureRequest.JPEG_ORIENTATION
-import android.hardware.camera2.CaptureResult.CONTROL_AF_STATE
 import android.os.HandlerThread
 import android.util.Log
 import android.widget.TextView

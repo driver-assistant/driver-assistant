@@ -2,30 +2,24 @@ package io.github.driverassistant
 
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.*
-import android.hardware.camera2.CameraCaptureSession.CaptureCallback
-import android.hardware.camera2.CameraCharacteristics.*
-import android.hardware.camera2.CameraDevice.*
-import android.hardware.camera2.CaptureRequest.CONTROL_AF_TRIGGER
-import android.hardware.camera2.CaptureRequest.JPEG_ORIENTATION
-import android.hardware.camera2.CaptureResult.CONTROL_AF_STATE
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraDevice
 import android.media.ImageReader
-import android.os.*
+import android.os.Bundle
+import android.os.HandlerThread
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.util.Size
 import android.view.TextureView.SurfaceTextureListener
-import android.view.View
-import android.view.View.INVISIBLE
+import android.view.View.OnClickListener
 import io.github.driverassistant.recognizer.LatestImage
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
-import android.view.View.OnClickListener
 import io.github.driverassistant.state.*
-import io.github.driverassistant.util.*
+import io.github.driverassistant.util.RequestCode
+import io.github.driverassistant.util.handler
+import io.github.driverassistant.util.hideStatusAndNavigationBars
+import io.github.driverassistant.util.shortToast
 import kotlinx.android.synthetic.main.activity_main_screen.*
-import java.io.File
-import kotlin.math.roundToLong
 
 class MainScreenActivity : AppCompatActivity() {
     private val recognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
@@ -117,7 +111,7 @@ class MainScreenActivity : AppCompatActivity() {
         }
 
         override fun onConfigureFailed(session: CameraCaptureSession) {
-            shortToast(R.string.unable_to_start_preview)
+            shortToast(R.string.unable_to_start_preview)  // TODO: stateMachine.make action
         }
     }
 
@@ -127,13 +121,13 @@ class MainScreenActivity : AppCompatActivity() {
         }
 
         override fun onConfigureFailed(session: CameraCaptureSession) {
-            shortToast(R.string.unable_to_start_recording)
+            shortToast(R.string.unable_to_start_recording)  // TODO: stateMachine.make action
         }
     }
 
     private val videoImageButtonListener = OnClickListener {
         stateMachine.make(
-            VideoImageButtonClickedAction(
+            RecordSwitchAction(
                 videoFolderName = FOLDER_NAME,
                 recordingCaptureSessionStateCallback = recordingCaptureSessionStateCallback,
                 previewCaptureSessionStateCallback = previewCaptureSessionStateCallback,
@@ -192,22 +186,20 @@ class MainScreenActivity : AppCompatActivity() {
                     shortToast(R.string.no_write_external_storage_permission)
                 } else {
                     stateMachine.make(
-                        VideoImageButtonClickedAction(
+                        RecordSwitchAction(
                             videoFolderName = FOLDER_NAME,
                             recordingCaptureSessionStateCallback = recordingCaptureSessionStateCallback,
                             previewCaptureSessionStateCallback = previewCaptureSessionStateCallback,
                             videoImageButton = videoImageButton,
                             cameraTextureView = cameraTextureView,
                             chronometer = chronometer,
-                            activity = this
+                            activity = this  // TODO: is there a method to check permissions without passing the activity?
                         )
                     )
                 }
             }
         }
     }
-
-    val template = TEMPLATE_VIDEO_SNAPSHOT
 
     companion object {
         private const val TAG = "MainScreenActivity"
