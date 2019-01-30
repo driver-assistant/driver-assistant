@@ -7,7 +7,6 @@ import io.github.driverassistant.state.ImageShotAction
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
 import io.github.driverassistant.state.RecognizerImageButtonClickedAction
-import io.github.driverassistant.state.common.cleanRecognizersScreen
 import io.github.driverassistant.util.camera.PreviewingCamera
 import io.github.driverassistant.util.camera.SetUpCamera
 
@@ -21,7 +20,7 @@ class ResumedRecognizerPreviewState(
 
     override fun consume(action: MainScreenActivityAction): MainScreenActivityState = when (action) {
         is RecognizerImageButtonClickedAction -> {
-            cleanRecognizersScreen(action.recognizedObjectsView, action.statsTextView)
+            action.recognizersRunnerListener.onEnd()
 
             ResumedPreviewState(
                 setUpCamera = setUpCamera,

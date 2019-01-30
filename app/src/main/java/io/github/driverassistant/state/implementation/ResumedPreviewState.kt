@@ -89,8 +89,7 @@ class ResumedPreviewState(
 
             val recognizersRunner = RecognizersRunner(
                 fps = action.fps,
-                statsTextView = action.statsTextView,
-                recognizedObjectsView = action.recognizedObjectsView,
+                recognizersRunnerListener = action.recognizersRunnerListener,
                 recognizers = action.recognizers,
                 shootingCamera = shootingCamera,
                 captureThread = captureThread

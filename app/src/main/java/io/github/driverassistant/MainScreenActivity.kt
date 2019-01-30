@@ -15,10 +15,7 @@ import io.github.driverassistant.recognizer.LatestImage
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.state.*
-import io.github.driverassistant.util.RequestCode
-import io.github.driverassistant.util.handler
-import io.github.driverassistant.util.hideStatusAndNavigationBars
-import io.github.driverassistant.util.shortToast
+import io.github.driverassistant.util.*
 import kotlinx.android.synthetic.main.activity_main_screen.*
 
 class MainScreenActivity : AppCompatActivity() {
@@ -98,8 +95,7 @@ class MainScreenActivity : AppCompatActivity() {
         stateMachine.make(
             RecognizerImageButtonClickedAction(
                 fps = FPS,
-                recognizedObjectsView = recognizedObjectsView,
-                statsTextView = statsTextView,
+                recognizersRunnerListener = recognizersRunnerListener,
                 recognizers = recognizers
             )
         )
@@ -137,6 +133,27 @@ class MainScreenActivity : AppCompatActivity() {
                 activity = this
             )
         )
+    }
+
+    private val recognizersRunnerListener = object : RecognizersRunner.Companion.RecognizersRunnerListener {
+        override fun onResult(latestImage: LatestImage, objects: Iterable<PaintableOnCanvas>) {
+            val statsText = with(latestImage) { "${bytes.size} bytes, $width x $height" }
+            statsTextView.postApply { text = statsText }
+
+            recognizedObjectsView.postApply {
+                paintables = objects
+                invalidate()
+            }
+        }
+
+        override fun onEnd() {
+            statsTextView.postApply { text = "" }
+
+            recognizedObjectsView.postApply {
+                paintables = emptyList()
+                invalidate()
+            }
+        }
     }
 
     private lateinit var stateMachine: MainScreenActivityStateMachine
