@@ -1,7 +1,9 @@
 package io.github.driverassistant.state.implementation
 
+import io.github.driverassistant.state.ActivityResumedAction
+import io.github.driverassistant.state.MainScreenActivityAction
+import io.github.driverassistant.state.MainScreenActivityState
 import io.github.driverassistant.state.common.startCaptureThread
-import io.github.driverassistant.state.*
 
 class PausedState : MainScreenActivityState() {
     override fun consume(action: MainScreenActivityAction): MainScreenActivityState = when (action) {

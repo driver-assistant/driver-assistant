@@ -4,7 +4,6 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraCharacteristics.LENS_FACING
 import android.hardware.camera2.CameraCharacteristics.SENSOR_ORIENTATION
 import android.hardware.camera2.CameraManager
-import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CameraMetadata.LENS_FACING_BACK
 import android.util.Size
 import android.view.Surface

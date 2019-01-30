@@ -6,6 +6,8 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraDevice.TEMPLATE_STILL_CAPTURE
 import android.media.MediaRecorder
+import android.media.MediaRecorder.OutputFormat.MPEG_4
+import android.media.MediaRecorder.VideoEncoder.H264
 import android.os.HandlerThread
 import android.os.SystemClock
 import android.support.v4.app.ActivityCompat.requestPermissions
@@ -16,12 +18,11 @@ import android.view.TextureView
 import android.view.View
 import android.widget.Chronometer
 import android.widget.ImageButton
-import io.github.driverassistant.*
 import io.github.driverassistant.R
+import io.github.driverassistant.RecognizersRunner
 import io.github.driverassistant.state.*
 import io.github.driverassistant.util.*
 import io.github.driverassistant.util.camera.PreviewingCamera
-import io.github.driverassistant.util.camera.RecordingCamera
 import io.github.driverassistant.util.camera.SetUpCamera
 import io.github.driverassistant.util.camera.ShootingCamera
 
@@ -39,7 +40,7 @@ class ResumedPreviewState(
             ResumedCameraState(captureThread, setUpCamera)
         }
 
-        is VideoImageButtonClickedAction -> {
+        is RecordSwitchAction -> {
             if (permissionsAvailableOnThisAndroidVersion &&
                 checkSelfPermission(action.activity, WRITE_EXTERNAL_STORAGE) != PERMISSION_GRANTED
             ) {
@@ -58,7 +59,7 @@ class ResumedPreviewState(
                 val videoFolder = ensureVideoFolder(action.videoFolderName)
                 val videoFilePath = createVideoFile(videoFolder).absolutePath
 
-                val recordingCamera = startRecording(
+                val mediaRecorder = startRecording(
                     videoFilePath = videoFilePath,
                     setUpCamera = setUpCamera,
                     cameraDevice = previewingCamera.cameraDevice,
@@ -71,7 +72,7 @@ class ResumedPreviewState(
                 WaitingForRecordingSessionState(
                     setUpCamera = setUpCamera,
                     previewingCamera = previewingCamera,
-                    recordingCamera = recordingCamera,
+                    mediaRecorder = mediaRecorder,
                     captureThread = captureThread
                 )
             }
@@ -118,7 +119,7 @@ class ResumedPreviewState(
             cameraDevice: CameraDevice,
             chronometer: Chronometer,
             recordingCaptureSessionStateCallback: CameraCaptureSession.StateCallback
-        ): RecordingCamera {
+        ): MediaRecorder {
             videoImageButton.setImageResource(R.mipmap.btn_video_busy)
 
             val mediaRecorder = MediaRecorder().apply {
@@ -126,8 +127,8 @@ class ResumedPreviewState(
 
                 setOutputFile(videoFilePath)
 
-                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-                setVideoEncoder(MediaRecorder.VideoEncoder.H264)
+                setOutputFormat(MPEG_4)
+                setVideoEncoder(H264)
 
                 setVideoEncodingBitRate(5_000_000)  // TODO: Move the setting to the activity
                 setVideoFrameRate(30)  // TODO: Move the setting to the activity
@@ -157,10 +158,7 @@ class ResumedPreviewState(
                 start()
             }
 
-            return RecordingCamera(
-                recordSurface = recordSurface,
-                mediaRecorder = mediaRecorder
-            )
+            return mediaRecorder
         }
     }
 }

@@ -1,13 +1,13 @@
 package io.github.driverassistant.state.implementation
 
 import android.os.HandlerThread
-import io.github.driverassistant.util.camera.SetUpCamera
 import io.github.driverassistant.state.ActivityPausedAction
 import io.github.driverassistant.state.CameraOpenedAction
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
 import io.github.driverassistant.state.common.startPreview
 import io.github.driverassistant.state.common.stopCaptureThread
+import io.github.driverassistant.util.camera.SetUpCamera
 
 class ResumedCameraState(
     private val captureThread: HandlerThread,

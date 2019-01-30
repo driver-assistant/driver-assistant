@@ -8,12 +8,12 @@ fun <ViewType : View> ViewType.postApply(block: ViewType.() -> Unit) {
 }
 
 private const val VISIBILITY_WITHOUT_BARS =
-        SYSTEM_UI_FLAG_LAYOUT_STABLE or
-        SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-        SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
-        SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
-        SYSTEM_UI_FLAG_FULLSCREEN or
-        SYSTEM_UI_FLAG_HIDE_NAVIGATION
+    SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
+            SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or
+            SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
+            SYSTEM_UI_FLAG_FULLSCREEN or
+            SYSTEM_UI_FLAG_HIDE_NAVIGATION
 
 fun View.hideStatusAndNavigationBars() {
     this.postApply {

@@ -1,31 +1,31 @@
 package io.github.driverassistant.state.implementation
 
 import android.hardware.camera2.CameraCaptureSession
+import android.media.MediaRecorder
 import android.os.HandlerThread
 import android.view.View.INVISIBLE
-import io.github.driverassistant.*
+import io.github.driverassistant.R
 import io.github.driverassistant.state.MainScreenActivityAction
 import io.github.driverassistant.state.MainScreenActivityState
-import io.github.driverassistant.state.VideoImageButtonClickedAction
+import io.github.driverassistant.state.RecordSwitchAction
 import io.github.driverassistant.state.common.startPreview
 import io.github.driverassistant.util.camera.PreviewingCamera
-import io.github.driverassistant.util.camera.RecordingCamera
 import io.github.driverassistant.util.camera.SetUpCamera
 import io.github.driverassistant.util.postApply
 
 class ResumedRecordingState(
     private val setUpCamera: SetUpCamera,
     private val previewingCamera: PreviewingCamera,
-    private val recordingCamera: RecordingCamera,
+    private val mediaRecorder: MediaRecorder,
     private val recordingCaptureSession: CameraCaptureSession,
     private val captureThread: HandlerThread
 ) : MainScreenActivityState() {
 
     override fun consume(action: MainScreenActivityAction): MainScreenActivityState = when (action) {
-        is VideoImageButtonClickedAction -> {
+        is RecordSwitchAction -> {
             action.videoImageButton.setImageResource(R.mipmap.btn_video_online)
 
-            recordingCamera.mediaRecorder.apply {
+            mediaRecorder.apply {
                 stop()
                 reset()
             }

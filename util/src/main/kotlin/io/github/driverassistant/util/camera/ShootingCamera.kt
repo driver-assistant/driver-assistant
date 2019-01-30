@@ -1,10 +1,12 @@
 package io.github.driverassistant.util.camera
 
-import android.hardware.camera2.*
+import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics.*
+import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureRequest.CONTROL_AF_TRIGGER
 import android.hardware.camera2.CaptureRequest.JPEG_ORIENTATION
 import android.hardware.camera2.CaptureResult.CONTROL_AF_STATE
+import android.hardware.camera2.TotalCaptureResult
 import android.os.HandlerThread
 import io.github.driverassistant.util.handler
 
@@ -47,6 +49,10 @@ class ShootingCamera(
     }
 
     fun submitRequestForNextShot() {
+        // TODO: Maybe don't use the "lock focus" mechanism to take high quality shots
+        // because the quality of preview surface images is high enough for recognizers?
+        // The "lock focus" is slow (500 ms per shot) but
+        // the preview surface can work at any supported video frame rate.
         captureState = State.WAIT_LOCK
 
         captureSession.capture(focusRequest, captureCallback, captureThread.handler)
