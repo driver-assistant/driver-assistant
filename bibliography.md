@@ -17,6 +17,7 @@
 
 ## Gradle
 - <https://stackoverflow.com/questions/20404476/how-to-define-common-android-properties-for-all-modules-using-gradle>
+- <https://stackoverflow.com/questions/22068731/android-studio-doesnt-recognise-source-folders>
 
 ## Huge resources
 - <http://developer.alexanderklimov.ru/android/>
