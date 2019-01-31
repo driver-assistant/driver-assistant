@@ -5,14 +5,14 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 
 class RandomRecognizer : Recognizer {
-    override fun recognize(image: LatestImage): List<RecognizedObject> {
+    override fun recognize(imageData: ImageData): List<RecognizedObject> {
         val objects = mutableListOf<RecognizedObject>()
 
         for (i in 1..OBJECT_COUNT) {
             val angle = Random.nextFloat() * 2 * Math.PI
 
-            val x0 = Random.nextInt(LENGTH..(image.width - LENGTH)).toFloat()
-            val y0 = Random.nextInt(LENGTH..(image.height - LENGTH)).toFloat()
+            val x0 = Random.nextInt(LENGTH..(imageData.width - LENGTH)).toFloat()
+            val y0 = Random.nextInt(LENGTH..(imageData.height - LENGTH)).toFloat()
 
             val x1 = x0 + LENGTH * Math.cos(angle).toFloat()
             val y1 = y0 + LENGTH * Math.sin(angle).toFloat()

@@ -9,7 +9,7 @@ import android.view.TextureView.SurfaceTextureListener
 import android.widget.Chronometer
 import android.widget.ImageButton
 import io.github.driverassistant.RecognizersRunner
-import io.github.driverassistant.recognizer.LatestImage
+import io.github.driverassistant.recognizer.ImageData
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.util.state.Action
 
@@ -66,5 +66,5 @@ class RecordingCaptureSessionConfiguredAction(
 ) : MainScreenActivityAction()
 
 class ImageShotAction(
-    val latestImage: LatestImage
+    val imageData: ImageData
 ) : MainScreenActivityAction()

@@ -11,7 +11,7 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.TextureView.SurfaceTextureListener
 import android.view.View.OnClickListener
-import io.github.driverassistant.recognizer.LatestImage
+import io.github.driverassistant.recognizer.ImageData
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.state.*
@@ -78,7 +78,7 @@ class MainScreenActivity : AppCompatActivity() {
 
                 Log.d(TAG, "Image copied after ${System.currentTimeMillis() - startTime} ms")
 
-                val latestImage = LatestImage(latestImageBytes, width, height)
+                val latestImage = ImageData(latestImageBytes, width, height)
 
                 stateMachine.make(ImageShotAction(latestImage))
 
@@ -136,8 +136,8 @@ class MainScreenActivity : AppCompatActivity() {
     }
 
     private val recognizersRunnerListener = object : RecognizersRunner.Companion.RecognizersRunnerListener {
-        override fun onResult(latestImage: LatestImage, objects: Iterable<PaintableOnCanvas>) {
-            val statsText = with(latestImage) { "${bytes.size} bytes, $width x $height" }
+        override fun onResult(imageData: ImageData, objects: Iterable<PaintableOnCanvas>) {
+            val statsText = with(imageData) { "${bytes.size} bytes, $width x $height" }
             statsTextView.postApply { text = statsText }
 
             recognizedObjectsView.postApply {

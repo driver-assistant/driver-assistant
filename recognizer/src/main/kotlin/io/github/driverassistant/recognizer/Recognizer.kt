@@ -1,5 +1,5 @@
 package io.github.driverassistant.recognizer
 
 interface Recognizer {
-    fun recognize(image: LatestImage): List<RecognizedObject>
+    fun recognize(imageData: ImageData): List<RecognizedObject>
 }
