@@ -31,7 +31,7 @@ class ResumedRecognizerPreviewState(
         }
 
         is ImageShotAction -> {
-            recognizersRunner.recognize(action.latestImage)
+            recognizersRunner.recognize(action.imageData)
 
             this
         }
