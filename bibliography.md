@@ -19,6 +19,9 @@
 - <https://stackoverflow.com/questions/20404476/how-to-define-common-android-properties-for-all-modules-using-gradle>
 - <https://stackoverflow.com/questions/22068731/android-studio-doesnt-recognise-source-folders>
 
+## Lane lines recognition
+- <https://youtu.be/eLTLtUVuuy4>
+
 ## Huge resources
 - <http://developer.alexanderklimov.ru/android/>
 - <https://developer.android.com/guide/>
