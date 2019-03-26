@@ -28,7 +28,8 @@ class MainScreenActivity : AppCompatActivity() {
         start()
     }
 
-    private val recognizedObjectsLogSaver = RecognizedObjectsLogSaver { File(obbDir, "recognizedObjects.json") }
+    private val recognizedObjectsLogSaver =
+        RecognizedObjectsLogSaver { File(obbDir, "recognizedObjects.json") }  // TODO: is this dir ok?
 
     private val surfaceTextureListener = object : SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
@@ -136,7 +137,7 @@ class MainScreenActivity : AppCompatActivity() {
                 videoImageButton = videoImageButton,
                 cameraTextureView = cameraTextureView,
                 chronometer = chronometer,
-                activity = this
+                activity = this  // TODO: is there a method to check permissions without passing the activity?
             )
         )
     }
