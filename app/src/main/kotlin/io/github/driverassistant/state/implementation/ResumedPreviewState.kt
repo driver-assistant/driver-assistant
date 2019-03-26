@@ -51,7 +51,7 @@ class ResumedPreviewState(
                 requestPermissions(
                     action.activity,
                     arrayOf(WRITE_EXTERNAL_STORAGE),
-                    RequestCode.WRITE_EXTERNAL_STORAGE.id
+                    RequestCode.WRITE_EXTERNAL_STORAGE_FOR_RECORDING.id
                 )
 
                 this
@@ -79,31 +79,50 @@ class ResumedPreviewState(
         }
 
         is RecognizerImageButtonClickedAction -> {
-            val shootingCamera = ShootingCamera(
-                captureSession = previewCaptureSession,
-                requestTemplateType = TEMPLATE_STILL_CAPTURE,
-                setUpCamera = setUpCamera,
-                captureThread = captureThread,
-                previewingCamera = previewingCamera
-            )
+            if (permissionsAvailableOnThisAndroidVersion &&
+                checkSelfPermission(action.activity, WRITE_EXTERNAL_STORAGE) != PERMISSION_GRANTED
+            ) {
+                if (shouldShowRequestPermissionRationale(action.activity, WRITE_EXTERNAL_STORAGE)) {
+                    action.activity.shortToast(R.string.no_write_external_storage_permission)
+                }
 
-            val recognizersRunner = RecognizersRunner(
-                fps = action.fps,
-                recognizersRunnerListener = action.recognizersRunnerListener,
-                recognizers = action.recognizers,
-                shootingCamera = shootingCamera,
-                captureThread = captureThread
-            )
+                requestPermissions(
+                    action.activity,
+                    arrayOf(WRITE_EXTERNAL_STORAGE),
+                    RequestCode.WRITE_EXTERNAL_STORAGE_FOR_LOG.id
+                )
 
-            shootingCamera.submitRequestForNextShot()
+                this
+            } else {
+                val shootingCamera = ShootingCamera(
+                    captureSession = previewCaptureSession,
+                    requestTemplateType = TEMPLATE_STILL_CAPTURE,
+                    setUpCamera = setUpCamera,
+                    captureThread = captureThread,
+                    previewingCamera = previewingCamera
+                )
 
-            ResumedRecognizerPreviewState(
-                setUpCamera = setUpCamera,
-                previewingCamera = previewingCamera,
-                captureThread = captureThread,
-                previewCaptureSession = previewCaptureSession,
-                recognizersRunner = recognizersRunner
-            )
+                val recognizersRunner = RecognizersRunner(
+                    fps = action.fps,
+                    recognizersRunnerListener = action.recognizersRunnerListener,
+                    recognizers = action.recognizers,
+                    shootingCamera = shootingCamera,
+                    captureThread = captureThread,
+                    recognizedObjectsLogSaver = action.recognizedObjectsLogSaver
+                )
+
+                action.recognizedObjectsLogSaver.onBegin()
+
+                shootingCamera.submitRequestForNextShot()
+
+                ResumedRecognizerPreviewState(
+                    setUpCamera = setUpCamera,
+                    previewingCamera = previewingCamera,
+                    captureThread = captureThread,
+                    previewCaptureSession = previewCaptureSession,
+                    recognizersRunner = recognizersRunner
+                )
+            }
         }
 
         else -> super.consume(action)

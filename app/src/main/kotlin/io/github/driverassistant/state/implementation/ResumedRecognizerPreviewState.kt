@@ -21,6 +21,7 @@ class ResumedRecognizerPreviewState(
     override fun consume(action: MainScreenActivityAction): MainScreenActivityState = when (action) {
         is RecognizerImageButtonClickedAction -> {
             action.recognizersRunnerListener.onEnd()
+            action.recognizedObjectsLogSaver.onEnd()
 
             ResumedPreviewState(
                 setUpCamera = setUpCamera,

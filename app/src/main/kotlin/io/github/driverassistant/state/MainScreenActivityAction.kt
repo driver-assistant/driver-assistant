@@ -8,6 +8,7 @@ import android.view.TextureView
 import android.view.TextureView.SurfaceTextureListener
 import android.widget.Chronometer
 import android.widget.ImageButton
+import io.github.driverassistant.RecognizedObjectsLogSaver
 import io.github.driverassistant.RecognizersRunner
 import io.github.driverassistant.recognizer.ImageData
 import io.github.driverassistant.recognizer.Recognizer
@@ -42,9 +43,11 @@ class CameraClosedAction(
 ) : MainScreenActivityAction()
 
 class RecognizerImageButtonClickedAction(
+    val activity: Activity,
     val fps: Double,
     val recognizersRunnerListener: RecognizersRunner.Companion.RecognizersRunnerListener,
-    val recognizers: Iterable<Recognizer>
+    val recognizers: Iterable<Recognizer>,
+    val recognizedObjectsLogSaver: RecognizedObjectsLogSaver
 ) : MainScreenActivityAction()
 
 class RecordSwitchAction(
