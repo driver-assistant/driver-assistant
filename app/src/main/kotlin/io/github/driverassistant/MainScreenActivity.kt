@@ -103,7 +103,7 @@ class MainScreenActivity : AppCompatActivity() {
                 recognizersRunnerListener = recognizersRunnerListener,
                 recognizers = recognizers,
                 recognizedObjectsLogSaver = recognizedObjectsLogSaver,
-                activity = this
+                activity = this  // TODO: is there a method to check permissions without passing the activity?
             )
         )
     }
