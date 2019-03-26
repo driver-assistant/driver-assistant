@@ -31,7 +31,15 @@ fun Line.toPaintableOnCanvas(): PaintableOnCanvas {
     return object : PaintableOnCanvas {
         override fun paintOn(canvas: Canvas) {
             // TODO: research video rotation (#3). Now need to swap coordinates
-            canvas.drawLine(line.y0, line.x0, line.y1, line.x1, paint)
+            canvas.apply {
+                drawLine(
+                    line.y0 * width,
+                    line.x0 * height,
+                    line.y1 * width,
+                    line.x1 * height,
+                    paint
+                )
+            }
         }
     }
 }
@@ -66,7 +74,16 @@ fun Circle.toPaintableOnCanvas(): PaintableOnCanvas {
     return object : PaintableOnCanvas {
         override fun paintOn(canvas: Canvas) {
             // TODO: research video rotation (#3). Now need to swap coordinates
-            canvas.drawCircle(y, x, r, paint)
+
+            canvas.apply {
+                drawOval(
+                    y * width - r,
+                    x * height - r,
+                    y * width + r,
+                    x * height + r,
+                    paint
+                )
+            }
         }
     }
 }

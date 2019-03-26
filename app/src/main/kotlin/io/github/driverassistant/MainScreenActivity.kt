@@ -12,6 +12,7 @@ import android.util.Log
 import android.view.TextureView.SurfaceTextureListener
 import android.view.View.OnClickListener
 import io.github.driverassistant.recognizer.ImageData
+import io.github.driverassistant.recognizer.LinesRecognizer
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.state.*
@@ -19,7 +20,7 @@ import io.github.driverassistant.util.*
 import kotlinx.android.synthetic.main.activity_main_screen.*
 
 class MainScreenActivity : AppCompatActivity() {
-    private val recognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
+    private val recognizers: List<Recognizer> = listOf(RandomRecognizer(), LinesRecognizer())
 
     private var recognizerThread = HandlerThread("Driver Assistant Recognizer Thread").apply {
         isDaemon = true

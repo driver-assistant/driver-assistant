@@ -11,20 +11,20 @@ class RandomRecognizer : Recognizer {
         for (i in 1..OBJECT_COUNT) {
             val angle = Random.nextFloat() * 2 * Math.PI
 
-            val x0 = Random.nextInt(LENGTH..(imageData.width - LENGTH)).toFloat()
-            val y0 = Random.nextInt(LENGTH..(imageData.height - LENGTH)).toFloat()
+            val x0 = Random.nextInt(LENGTH..(imageData.width - LENGTH)).toDouble() / imageData.width
+            val y0 = Random.nextInt(LENGTH..(imageData.height - LENGTH)).toDouble() / imageData.height
 
-            val x1 = x0 + LENGTH * Math.cos(angle).toFloat()
-            val y1 = y0 + LENGTH * Math.sin(angle).toFloat()
+            val x1 = x0 + LENGTH * Math.cos(angle) / imageData.width
+            val y1 = y0 + LENGTH * Math.sin(angle) / imageData.height
 
-            objects.add(RedArrow(x0, y0, x1, y1))
+            objects.add(RedArrow(x0.toFloat(), y0.toFloat(), x1.toFloat(), y1.toFloat()))
         }
 
         return objects
     }
 
     companion object {
-        private const val OBJECT_COUNT = 10
+        private const val OBJECT_COUNT = 1
 
         private const val LENGTH = 50
     }
