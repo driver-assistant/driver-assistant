@@ -77,21 +77,34 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
                 true -> height to width
             }
 
-            val previewSize = cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]!!
+            val previewSizes = cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]!!
                 .getOutputSizes(SurfaceTexture::class.java)
-                .chooseOptimalSize(rotatedWidth, rotatedHeight)
+                .toSet()
+
+            val imageSizes = cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]!!
+                .getOutputSizes(JPEG)
+                .toSet()
+
+            val previewAndImageSizes = previewSizes intersect imageSizes
+            check(previewAndImageSizes.isNotEmpty()) { "SurfaceTexture and JPEG have different sizes on this device" }
+
+            val previewAndImageSize = previewAndImageSizes.chooseOptimalSize(rotatedWidth, rotatedHeight)
 
             val videoSize = cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]!!
                 .getOutputSizes(MediaRecorder::class.java)
+                .asIterable()
                 .chooseOptimalSize(rotatedWidth, rotatedHeight)
 
-            val imageSize = cameraCharacteristics[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]!!
-                .getOutputSizes(JPEG)
-                .chooseOptimalSize(rotatedWidth, rotatedHeight)
-
-            val imageReader = ImageReader.newInstance(imageSize.width, imageSize.height, JPEG, 1).apply {
-                setOnImageAvailableListener(onImageAvailableListener, captureThread.handler)
-            }
+            val imageReader = ImageReader
+                .newInstance(
+                    previewAndImageSize.width,
+                    previewAndImageSize.height,
+                    JPEG,
+                    1
+                )
+                .apply {
+                    setOnImageAvailableListener(onImageAvailableListener, captureThread.handler)
+                }
 
             while (
                 permissionsAvailableOnThisAndroidVersion &&
@@ -113,7 +126,7 @@ class ResumedState(private val captureThread: HandlerThread) : MainScreenActivit
             return SetUpCamera(
                 onImageAvailableListener = onImageAvailableListener,
                 totalRotation = totalRotation,
-                previewSize = previewSize,
+                previewSize = previewAndImageSize,
                 videoSize = videoSize,
                 imageReader = imageReader
             )
