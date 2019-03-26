@@ -8,6 +8,7 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc.*
 import java.io.FileOutputStream
 import kotlin.math.PI
+import kotlin.math.abs
 
 class LinesRecognizer : OpenCvRecognizer() {
     override fun recognize(imageData: ImageData): List<RecognizedObject> {
@@ -51,7 +52,13 @@ class LinesRecognizer : OpenCvRecognizer() {
                 val dx = it.x1 - it.x0
                 val dy = it.y1 - it.y0
 
-                dx >= dy || dx <= -dy
+                if (dx == 0.0) {
+                    return@filter false
+                }
+
+                val k = dy / dx
+
+                abs(k) <= 2
             }
             .map {
                 with(it) {
