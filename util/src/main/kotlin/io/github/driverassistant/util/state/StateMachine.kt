@@ -2,7 +2,7 @@ package io.github.driverassistant.util.state
 
 import android.util.Log
 
-open class StateMachine<in ActionType : Action, StateType : State<ActionType, StateType>>(initialState: StateType) {
+open class StateMachine<in ActionType : Action, out StateType : State<ActionType, StateType>>(initialState: StateType) {
     private var currentState: StateType = initialState
 
     fun make(action: ActionType) {

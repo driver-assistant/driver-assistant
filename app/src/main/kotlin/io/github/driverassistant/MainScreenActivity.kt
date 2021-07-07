@@ -12,19 +12,24 @@ import android.util.Log
 import android.view.TextureView.SurfaceTextureListener
 import android.view.View.OnClickListener
 import io.github.driverassistant.recognizer.ImageData
+import io.github.driverassistant.recognizer.LinesRecognizer
 import io.github.driverassistant.recognizer.RandomRecognizer
 import io.github.driverassistant.recognizer.Recognizer
 import io.github.driverassistant.state.*
 import io.github.driverassistant.util.*
 import kotlinx.android.synthetic.main.activity_main_screen.*
+import java.io.File
 
 class MainScreenActivity : AppCompatActivity() {
-    private val recognizers: List<Recognizer> = listOf(RandomRecognizer())  // TODO: Add normal recognizers here
+    private val recognizers: List<Recognizer> = listOf(RandomRecognizer(), LinesRecognizer())
 
     private var recognizerThread = HandlerThread("Driver Assistant Recognizer Thread").apply {
         isDaemon = true
         start()
     }
+
+    private val recognizedObjectsLogSaver =
+        RecognizedObjectsLogSaver { File(obbDir, "recognizedObjects.json") }  // TODO: is this dir ok?
 
     private val surfaceTextureListener = object : SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, width: Int, height: Int) {
@@ -96,7 +101,9 @@ class MainScreenActivity : AppCompatActivity() {
             RecognizerImageButtonClickedAction(
                 fps = FPS,
                 recognizersRunnerListener = recognizersRunnerListener,
-                recognizers = recognizers
+                recognizers = recognizers,
+                recognizedObjectsLogSaver = recognizedObjectsLogSaver,
+                activity = this  // TODO: is there a method to check permissions without passing the activity?
             )
         )
     }
@@ -130,7 +137,7 @@ class MainScreenActivity : AppCompatActivity() {
                 videoImageButton = videoImageButton,
                 cameraTextureView = cameraTextureView,
                 chronometer = chronometer,
-                activity = this
+                activity = this  // TODO: is there a method to check permissions without passing the activity?
             )
         )
     }
@@ -198,7 +205,7 @@ class MainScreenActivity : AppCompatActivity() {
                 }
             }
 
-            RequestCode.WRITE_EXTERNAL_STORAGE -> {
+            RequestCode.WRITE_EXTERNAL_STORAGE_FOR_RECORDING -> {
                 if (grantResults[0] != PERMISSION_GRANTED) {
                     shortToast(R.string.no_write_external_storage_permission)
                 } else {
@@ -210,6 +217,22 @@ class MainScreenActivity : AppCompatActivity() {
                             videoImageButton = videoImageButton,
                             cameraTextureView = cameraTextureView,
                             chronometer = chronometer,
+                            activity = this  // TODO: is there a method to check permissions without passing the activity?
+                        )
+                    )
+                }
+            }
+
+            RequestCode.WRITE_EXTERNAL_STORAGE_FOR_LOG -> {
+                if (grantResults[0] != PERMISSION_GRANTED) {
+                    shortToast(R.string.no_write_external_storage_permission)
+                } else {
+                    stateMachine.make(
+                        RecognizerImageButtonClickedAction(
+                            fps = FPS,
+                            recognizersRunnerListener = recognizersRunnerListener,
+                            recognizers = recognizers,
+                            recognizedObjectsLogSaver = recognizedObjectsLogSaver,
                             activity = this  // TODO: is there a method to check permissions without passing the activity?
                         )
                     )

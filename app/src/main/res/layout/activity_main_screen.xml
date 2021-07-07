@@ -45,6 +45,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="@dimen/side_margin"
         android:layout_marginBottom="@dimen/side_margin"
+        android:alpha="@dimen/imageButtonAlpha"
         android:contentDescription="@string/recognizer_button"
         android:src="@mipmap/btn_recognizer" />
 
@@ -56,6 +57,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="@dimen/side_margin"
         android:layout_marginBottom="@dimen/side_margin"
+        android:alpha="@dimen/imageButtonAlpha"
         android:contentDescription="@string/video_button"
         android:src="@mipmap/btn_video_online" />
 

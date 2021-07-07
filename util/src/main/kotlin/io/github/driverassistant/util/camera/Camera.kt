@@ -35,7 +35,7 @@ private val Size.area get() = this.width.toLong() * this.height.toLong()
 
 private val sizeComparatorByArea = Comparator<Size> { lhs, rhs -> (lhs.area - rhs.area).sign }
 
-fun Array<Size>.chooseOptimalSize(width: Int, height: Int) = this
+fun Iterable<Size>.chooseOptimalSize(width: Int, height: Int) = this
     .filter { it.width >= width && it.height >= height }
     .minWith(sizeComparatorByArea)
     ?: this.first()

@@ -14,7 +14,8 @@ class RecognizersRunner(
     private val recognizersRunnerListener: RecognizersRunnerListener,
     private val recognizers: Iterable<Recognizer>,
     private val shootingCamera: ShootingCamera,
-    private val captureThread: HandlerThread
+    private val captureThread: HandlerThread,
+    private val recognizedObjectsLogSaver: RecognizedObjectsLogSaver
 ) {
     private val delay = (1000.0 / fps).roundToLong()
 
@@ -23,8 +24,13 @@ class RecognizersRunner(
 
         captureThread.handler.postDelayed(delay) { shootingCamera.submitRequestForNextShot() }
 
-        val paintables = recognizers
-            .flatMap { recognizer -> recognizer.recognize(imageData) }
+        val recognizerToRecognizedObjects = recognizers
+            .associateBy { it.recognize(imageData) }
+
+        recognizedObjectsLogSaver.logEntry(recognizerToRecognizedObjects)
+
+        val paintables = recognizerToRecognizedObjects
+            .flatMap { (recognizedObjects, _) -> recognizedObjects }
             .flatMap { recognizedObject -> recognizedObject.elements }
             .map { recognizedObjectElement -> recognizedObjectElement.toPaintableOnCanvas() }
 

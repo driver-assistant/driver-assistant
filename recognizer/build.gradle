@@ -1,8 +1,33 @@
-apply plugin: "kotlin"
+apply plugin: "com.android.library"
+
+apply plugin: "kotlin-android"
+
+apply plugin: "kotlin-android-extensions"
+
+android {
+    compileSdkVersion rootProject.ext.sdk_version
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion rootProject.ext.sdk_version
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    sourceSets {
+        main.java.srcDirs += "src/main/kotlin"
+    }
+}
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.android.support:appcompat-v7:$android_support_version"
     implementation "com.android.support:support-v4:$android_support_version"
-    testImplementation "junit:junit:4.12"
+    implementation "com.quickbirdstudios:opencv:$opencv_version"
 }
